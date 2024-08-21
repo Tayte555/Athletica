@@ -1,25 +1,28 @@
 /**
- * Database Initialisation
+ * Imports
  */
-require('dotenv').config()
-var express = require('express');
-var MongoClient = require('mongodb').MongoClient;
-var cors = require('cors');
-const multer = require('multer');
+import express from 'express';
+import mongoose from 'mongoose';
+import dotenv from 'dotenv';
+const app = express();
+dotenv.config();
 
-var app = express();
-app.use(cors());
+/**
+ * Database Connection
+ */
+const connectMongoDB = async () => {
+    try {
+        await mongoose.connect(process.env.MONGODB_URI);
+        console.log("Database Connected")
+    } catch (error) {
+        throw error;
+    }
+}
 
-const uri = process.env.MONGODB_URI;
-const db_name = process.env.DATABASENAME;
-var database;
-
-app.listen(5038, ()=> {
-    MongoClient.connect(uri,(error,client)=>{
-        database = client.db(db_name);
-        console.log("Athletica Database Connection Successful");
-    })
-})
+app.listen(8800, () => {
+    connectMongoDB();
+    console.log("Backend Connected");
+});
 
 /**
  *  Setting up 
