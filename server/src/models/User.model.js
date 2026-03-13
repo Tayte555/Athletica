@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 
 const userSchema = new mongoose.Schema(
   {
+    // Required profile fields
     email: {
       type: String,
       required: true,
@@ -18,6 +19,32 @@ const userSchema = new mongoose.Schema(
     password: {
       type: String,
       required: true,
+    },
+
+    // Optional profile fields
+    avatar: {
+      type: String,
+      default: "",
+    },
+    name: {
+      type: String,
+      default: "",
+    },
+    bio: {
+      type: String,
+      default: "",
+    },
+    location: {
+      type: String,
+      default: "",
+    },
+    pronouns: {
+      type: String,
+      default: "",
+    },
+    socialLinks: {
+      type: Map,
+      of: String,
     },
   },
   { timestamps: true, collection: "Users" },
