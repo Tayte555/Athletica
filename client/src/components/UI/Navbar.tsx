@@ -47,7 +47,9 @@ export default function Navbar() {
   return (
     <nav className="bg-gray-800 text-white p-4 grid grid-cols-3 h-32">
       <div className="text-xl flex items-center justify-start ml-10">
-        Athletica
+        <a href="/" className="hover:cursor-pointer">
+          Athletica
+        </a>
       </div>
 
       <div className="flex items-center justify-center space-x-10 text-xl">

@@ -74,7 +74,9 @@ export default function Profile() {
         <Navbar />
 
         <div className="flex flex-1 items-center justify-center">
-          <h1 className="text-3xl font-bold text-gray-600">User not found</h1>
+          <h1 className="text-3xl font-bold text-gray-600">
+            Page not found...
+          </h1>
         </div>
 
         <Footer />
