@@ -3,6 +3,7 @@ import jwt from "jsonwebtoken";
 import { protect } from "../middleware/auth.middleware.js";
 import Routine from "../models/Routine.model.js";
 import Exercise from "../models/Exercise.model.js";
+import User from "../models/User.model.js";
 
 const router = express.Router();
 
@@ -114,6 +115,137 @@ function formatRoutineForResponse(routine, currentUserId = null) {
       : false,
   };
 }
+
+router.get("/search", async (req, res) => {
+  try {
+    const {
+      q = "",
+      difficulty = "",
+      recency = "",
+      workoutType = "",
+      muscle = "",
+      minDuration,
+      maxDuration,
+      page = 1,
+      limit = 10,
+    } = req.query;
+
+    const parsedPage = Math.max(parseInt(page, 10) || 1, 1);
+    const parsedLimit = Math.max(parseInt(limit, 10) || 10, 1);
+    const skip = (parsedPage - 1) * parsedLimit;
+
+    const query = {
+      isPublic: true,
+    };
+
+    if (q.trim()) {
+      const searchRegex = new RegExp(q.trim(), "i");
+
+      const matchedUsers = await User.find({
+        $or: [{ username: searchRegex }, { name: searchRegex }],
+      }).select("_id");
+
+      const userIds = matchedUsers.map((u) => u._id);
+
+      query.$or = [
+        { title: searchRegex },
+        { description: searchRegex },
+        { tags: searchRegex },
+        { focus: searchRegex },
+        { workoutType: searchRegex },
+        { targetMuscles: searchRegex },
+        { createdBy: { $in: userIds } },
+      ];
+    }
+
+    if (difficulty) {
+      query.difficulty = new RegExp(`^${difficulty}$`, "i");
+    }
+
+    if (workoutType) {
+      const typeRegex = new RegExp(workoutType, "i");
+
+      query.$and = query.$and || [];
+
+      query.$and.push({
+        $or: [
+          { workoutType: typeRegex },
+          { tags: typeRegex },
+          { focus: typeRegex },
+          { targetMuscles: typeRegex },
+        ],
+      });
+    }
+
+    if (muscle) {
+      const muscleRegex = new RegExp(muscle, "i");
+
+      query.$and = query.$and || [];
+
+      query.$and.push({
+        $or: [
+          { targetMuscles: muscleRegex },
+          { tags: muscleRegex },
+          { focus: muscleRegex },
+          { workoutType: muscleRegex },
+        ],
+      });
+    }
+
+    if (minDuration !== undefined || maxDuration !== undefined) {
+      query.durationMinutes = {};
+
+      if (minDuration !== undefined && minDuration !== "") {
+        query.durationMinutes.$gte = Number(minDuration);
+      }
+
+      if (maxDuration !== undefined && maxDuration !== "") {
+        query.durationMinutes.$lte = Number(maxDuration);
+      }
+    }
+
+    if (recency) {
+      const now = new Date();
+      let cutoffDate = null;
+
+      if (recency === "7d") {
+        cutoffDate = new Date(now);
+        cutoffDate.setDate(now.getDate() - 7);
+      } else if (recency === "30d") {
+        cutoffDate = new Date(now);
+        cutoffDate.setDate(now.getDate() - 30);
+      } else if (recency === "90d") {
+        cutoffDate = new Date(now);
+        cutoffDate.setDate(now.getDate() - 90);
+      }
+
+      if (cutoffDate) {
+        query.createdAt = { $gte: cutoffDate };
+      }
+    }
+
+    const [items, total] = await Promise.all([
+      Routine.find(query)
+        .populate("createdBy", "username name avatar")
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(parsedLimit),
+      Routine.countDocuments(query),
+    ]);
+
+    res.json({
+      items,
+      pagination: {
+        page: parsedPage,
+        totalPages: Math.max(1, Math.ceil(total / parsedLimit)),
+        total,
+      },
+    });
+  } catch (error) {
+    console.error("Search route error:", error);
+    res.status(500).json({ message: "Failed to search routines" });
+  }
+});
 
 router.get("/public", protect, async (req, res) => {
   try {
