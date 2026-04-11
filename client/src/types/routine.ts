@@ -50,6 +50,9 @@ export type Routine = {
     name?: string;
     avatar?: string;
   };
+  likesCount?: number;
+  isLiked?: boolean;
+  commentsCount?: number;
   exercises: RoutineExercise[];
   savedByCount?: number;
   isSaved?: boolean;

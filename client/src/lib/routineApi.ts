@@ -26,13 +26,24 @@ export async function apiGet<T>(url: string): Promise<T> {
 }
 
 export async function apiPost<T>(url: string, body?: unknown): Promise<T> {
+  const token = localStorage.getItem("token");
+
   const res = await fetch(url, {
     method: "POST",
-    headers: getAuthHeaders(),
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
     body: body ? JSON.stringify(body) : undefined,
   });
 
-  return handleResponse<T>(res);
+  const data = await res.json();
+
+  if (!res.ok) {
+    throw new Error(data.message || "Request failed");
+  }
+
+  return data;
 }
 
 export async function apiPut<T>(url: string, body?: unknown): Promise<T> {

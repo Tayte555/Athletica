@@ -4,7 +4,13 @@ import Navbar from "../../../components/UI/Navbar";
 import Footer from "../../../components/UI/Footer";
 import { apiDelete, apiGet } from "../../../lib/routineApi";
 import type { Routine } from "../../../types/routine";
-import { BookmarkCheck, Search } from "lucide-react";
+import {
+  Bookmark,
+  BookmarkCheck,
+  Heart,
+  MessageCircle,
+  Search,
+} from "lucide-react";
 
 export default function RoutineSavedPage() {
   const [routines, setRoutines] = useState<Routine[]>([]);
@@ -129,6 +135,22 @@ export default function RoutineSavedPage() {
                     <span className="rounded-full bg-black/5 px-3 py-1 text-xs font-medium">
                       {routine.exercises.length} exercises
                     </span>
+                  </div>
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    <div className="inline-flex items-center gap-1.5 rounded-full bg-gray-100 px-3 py-1 text-xs text-gray-600">
+                      <Heart size={14} />
+                      <span>{routine.likesCount || 0}</span>
+                    </div>
+
+                    <div className="inline-flex items-center gap-1.5 rounded-full bg-gray-100 px-3 py-1 text-xs text-gray-600">
+                      <MessageCircle size={14} />
+                      <span>{routine.commentsCount || 0}</span>
+                    </div>
+
+                    <div className="inline-flex items-center gap-1.5 rounded-full bg-gray-100 px-3 py-1 text-xs text-gray-600">
+                      <Bookmark size={14} />
+                      <span>{routine.savedByCount || 0}</span>
+                    </div>
                   </div>
                 </div>
 

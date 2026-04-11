@@ -4,6 +4,7 @@ import { protect } from "../middleware/auth.middleware.js";
 import Routine from "../models/Routine.model.js";
 import Exercise from "../models/Exercise.model.js";
 import User from "../models/User.model.js";
+import Comment from "../models/Comment.model.js";
 
 const router = express.Router();
 
@@ -95,6 +96,44 @@ async function validateRoutineExercises(exercises) {
   return null;
 }
 
+async function attachCommentCounts(routines, currentUserId = null) {
+  const routineIds = routines.map((routine) => routine._id).filter(Boolean);
+
+  if (routineIds.length === 0) {
+    return routines.map((routine) =>
+      formatRoutineForResponse(routine, currentUserId),
+    );
+  }
+
+  const commentCounts = await Comment.aggregate([
+    {
+      $match: {
+        routine: { $in: routineIds },
+      },
+    },
+    {
+      $group: {
+        _id: "$routine",
+        count: { $sum: 1 },
+      },
+    },
+  ]);
+
+  const commentCountMap = new Map(
+    commentCounts.map((item) => [String(item._id), item.count]),
+  );
+
+  return routines.map((routine) =>
+    formatRoutineForResponse(
+      {
+        ...(routine.toObject ? routine.toObject() : routine),
+        commentsCount: commentCountMap.get(String(routine._id)) || 0,
+      },
+      currentUserId,
+    ),
+  );
+}
+
 function formatRoutineForResponse(routine, currentUserId = null) {
   const routineObj = routine.toObject ? routine.toObject() : routine;
 
@@ -113,11 +152,18 @@ function formatRoutineForResponse(routine, currentUserId = null) {
       ? String(routineObj.createdBy?._id || routineObj.createdBy) ===
         String(currentUserId)
       : false,
+    likesCount: routineObj.likes?.length || 0,
+    isLiked: currentUserId
+      ? routineObj.likes?.some((id) => id.toString() === currentUserId)
+      : false,
+    commentsCount: routineObj.commentsCount || 0,
   };
 }
 
 router.get("/search", async (req, res) => {
   try {
+    const currentUserId = getOptionalUserId(req);
+
     const {
       q = "",
       difficulty = "",
@@ -166,7 +212,6 @@ router.get("/search", async (req, res) => {
       const typeRegex = new RegExp(workoutType, "i");
 
       query.$and = query.$and || [];
-
       query.$and.push({
         $or: [
           { workoutType: typeRegex },
@@ -181,7 +226,6 @@ router.get("/search", async (req, res) => {
       const muscleRegex = new RegExp(muscle, "i");
 
       query.$and = query.$and || [];
-
       query.$and.push({
         $or: [
           { targetMuscles: muscleRegex },
@@ -233,8 +277,10 @@ router.get("/search", async (req, res) => {
       Routine.countDocuments(query),
     ]);
 
+    const formattedItems = await attachCommentCounts(items, currentUserId);
+
     res.json({
-      items,
+      items: formattedItems,
       pagination: {
         page: parsedPage,
         totalPages: Math.max(1, Math.ceil(total / parsedLimit)),
@@ -247,6 +293,83 @@ router.get("/search", async (req, res) => {
   }
 });
 
+router.post("/:id/like", protect, async (req, res) => {
+  try {
+    const routine = await Routine.findById(req.params.id).populate(
+      "createdBy",
+      "username name avatar",
+    );
+
+    if (!routine) {
+      return res.status(404).json({ message: "Routine not found" });
+    }
+
+    const userId = req.userId.toString();
+    const alreadyLiked = routine.likes.some((id) => id.toString() === userId);
+
+    if (alreadyLiked) {
+      routine.likes = routine.likes.filter((id) => id.toString() !== userId);
+    } else {
+      routine.likes.push(req.userId);
+    }
+
+    await routine.save();
+
+    res.json({
+      _id: routine._id,
+      likesCount: routine.likes.length,
+      isLiked: routine.likes.some((id) => id.toString() === userId),
+    });
+  } catch (error) {
+    console.error("Like routine error:", error);
+    res.status(500).json({ message: "Failed to update like" });
+  }
+});
+
+router.get("/:id/comments", async (req, res) => {
+  try {
+    const comments = await Comment.find({ routine: req.params.id })
+      .populate("user", "username name avatar")
+      .sort({ createdAt: -1 });
+
+    res.json(comments);
+  } catch (error) {
+    console.error("Get comments error:", error);
+    res.status(500).json({ message: "Failed to fetch comments" });
+  }
+});
+
+router.post("/:id/comments", protect, async (req, res) => {
+  try {
+    const { text } = req.body;
+
+    if (!text || !text.trim()) {
+      return res.status(400).json({ message: "Comment text is required" });
+    }
+
+    const routine = await Routine.findById(req.params.id);
+    if (!routine) {
+      return res.status(404).json({ message: "Routine not found" });
+    }
+
+    const comment = await Comment.create({
+      routine: req.params.id,
+      user: req.userId,
+      text: text.trim(),
+    });
+
+    const populatedComment = await Comment.findById(comment._id).populate(
+      "user",
+      "username name avatar",
+    );
+
+    res.status(201).json(populatedComment);
+  } catch (error) {
+    console.error("Create comment error:", error);
+    res.status(500).json({ message: "Failed to create comment" });
+  }
+});
+
 router.get("/public", protect, async (req, res) => {
   try {
     const routines = await Routine.find({ isPublic: true })
@@ -254,9 +377,7 @@ router.get("/public", protect, async (req, res) => {
       .populate("exercises.exercise")
       .sort({ createdAt: -1 });
 
-    res.json(
-      routines.map((routine) => formatRoutineForResponse(routine, req.userId)),
-    );
+    res.json(await attachCommentCounts(routines, req.userId));
   } catch (error) {
     console.error("Error fetching public routines:", error);
     res.status(500).json({ message: "Server error" });
@@ -270,9 +391,7 @@ router.get("/mine", protect, async (req, res) => {
       .populate("exercises.exercise")
       .sort({ updatedAt: -1 });
 
-    res.json(
-      routines.map((routine) => formatRoutineForResponse(routine, req.userId)),
-    );
+    res.json(await attachCommentCounts(routines, req.userId));
   } catch (error) {
     console.error("Error fetching user routines:", error);
     res.status(500).json({ message: "Server error" });
@@ -286,9 +405,7 @@ router.get("/saved/list", protect, async (req, res) => {
       .populate("exercises.exercise")
       .sort({ updatedAt: -1 });
 
-    res.json(
-      routines.map((routine) => formatRoutineForResponse(routine, req.userId)),
-    );
+    res.json(await attachCommentCounts(routines, req.userId));
   } catch (error) {
     console.error("Error fetching saved routines:", error);
     res.status(500).json({ message: "Server error" });
@@ -318,7 +435,19 @@ router.get("/:id", async (req, res) => {
         .json({ message: "Not authorized to view this routine" });
     }
 
-    res.json(formatRoutineForResponse(routine, currentUserId));
+    const commentsCount = await Comment.countDocuments({
+      routine: routine._id,
+    });
+
+    res.json(
+      formatRoutineForResponse(
+        {
+          ...routine.toObject(),
+          commentsCount,
+        },
+        currentUserId,
+      ),
+    );
   } catch (error) {
     console.error("Error fetching routine:", error);
     res.status(500).json({ message: "Server error" });

@@ -144,6 +144,12 @@ const routineSchema = new mongoose.Schema(
         ref: "User",
       },
     ],
+    likes: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+      },
+    ],
   },
   {
     timestamps: true,

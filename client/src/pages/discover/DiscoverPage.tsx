@@ -4,7 +4,14 @@ import Footer from "../../components/UI/Footer";
 import { Link } from "react-router-dom";
 import { apiGet } from "../../lib/routineApi";
 import type { Routine } from "../../types/routine";
-import { ChevronLeft, ChevronRight, X } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  X,
+  Heart,
+  MessageCircle,
+  Bookmark,
+} from "lucide-react";
 
 type DiscoverResponse = {
   items: Routine[];
@@ -517,6 +524,24 @@ export default function DiscoverPage() {
                         ))}
                       </div>
                     )}
+
+                    {/* ENGAGEMENT ROW */}
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      <div className="inline-flex items-center gap-1.5 rounded-full bg-gray-100 px-3 py-1 text-xs text-gray-600">
+                        <Heart size={14} />
+                        <span>{routine.likesCount || 0}</span>
+                      </div>
+
+                      <div className="inline-flex items-center gap-1.5 rounded-full bg-gray-100 px-3 py-1 text-xs text-gray-600">
+                        <MessageCircle size={14} />
+                        <span>{routine.commentsCount || 0}</span>
+                      </div>
+
+                      <div className="inline-flex items-center gap-1.5 rounded-full bg-gray-100 px-3 py-1 text-xs text-gray-600">
+                        <Bookmark size={14} />
+                        <span>{routine.savedByCount || 0}</span>
+                      </div>
+                    </div>
                   </div>
 
                   {/* ACTION */}
