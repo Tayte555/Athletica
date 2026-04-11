@@ -172,6 +172,7 @@ router.get("/search", async (req, res) => {
       muscle = "",
       minDuration,
       maxDuration,
+      sort = "recent",
       page = 1,
       limit = 10,
     } = req.query;
@@ -268,19 +269,36 @@ router.get("/search", async (req, res) => {
       }
     }
 
-    const [items, total] = await Promise.all([
-      Routine.find(query)
-        .populate("createdBy", "username name avatar")
-        .sort({ createdAt: -1 })
-        .skip(skip)
-        .limit(parsedLimit),
-      Routine.countDocuments(query),
-    ]);
+    let mongoSort = { createdAt: -1 };
 
-    const formattedItems = await attachCommentCounts(items, currentUserId);
+    if (sort === "oldest") {
+      mongoSort = { createdAt: 1 };
+    }
+
+    const routines = await Routine.find(query)
+      .populate("createdBy", "username name avatar")
+      .sort(mongoSort);
+
+    let formattedRoutines = await attachCommentCounts(routines, currentUserId);
+
+    if (sort === "popular") {
+      formattedRoutines = [...formattedRoutines].sort((a, b) => {
+        const likeDifference = (b.likesCount || 0) - (a.likesCount || 0);
+
+        if (likeDifference !== 0) return likeDifference;
+
+        return (
+          new Date(b.createdAt || 0).getTime() -
+          new Date(a.createdAt || 0).getTime()
+        );
+      });
+    }
+
+    const total = formattedRoutines.length;
+    const paginatedItems = formattedRoutines.slice(skip, skip + parsedLimit);
 
     res.json({
-      items: formattedItems,
+      items: paginatedItems,
       pagination: {
         page: parsedPage,
         totalPages: Math.max(1, Math.ceil(total / parsedLimit)),

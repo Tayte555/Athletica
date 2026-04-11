@@ -32,6 +32,7 @@ export default function DiscoverPage() {
   const [workoutType, setWorkoutType] = useState("");
   const [muscle, setMuscle] = useState("");
   const [duration, setDuration] = useState("");
+  const [sort, setSort] = useState("recent");
 
   const [page, setPage] = useState(1);
   const [pagination, setPagination] = useState({
@@ -61,6 +62,7 @@ export default function DiscoverPage() {
       try {
         const params = new URLSearchParams({
           page: String(page),
+          sort,
         });
 
         if (debouncedSearch) params.set("q", debouncedSearch);
@@ -108,6 +110,7 @@ export default function DiscoverPage() {
     muscle,
     duration,
     page,
+    sort,
   ]);
 
   const activeFilters = useMemo(() => {
@@ -381,13 +384,31 @@ export default function DiscoverPage() {
 
       {/* RESULTS */}
       <section className="px-6 pb-16 md:px-12">
-        <div className="mb-6 text-center">
-          <h3 className="text-2xl font-bold md:text-4xl">Results</h3>
-          {!loading && !error && (
-            <p className="mt-2 text-sm text-gray-500">
-              {pagination.total} result{pagination.total === 1 ? "" : "s"} found
-            </p>
-          )}
+        <div className="mb-6 text-center grid grid-cols-3">
+          <div></div>
+          <div>
+            <h3 className="text-2xl font-bold md:text-4xl">Results</h3>
+            {!loading && !error && (
+              <p className="mt-2 text-sm text-gray-500">
+                {pagination.total} result{pagination.total === 1 ? "" : "s"}{" "}
+                found
+              </p>
+            )}
+          </div>
+          <div className="flex items-end justify-end">
+            <select
+              value={sort}
+              onChange={(e) => {
+                setSort(e.target.value);
+                setPage(1);
+              }}
+              className="h-10 w-auto min-w-[160px] rounded-lg border border-black/10 bg-white px-3 text-sm outline-none"
+            >
+              <option value="recent">Most recent</option>
+              <option value="oldest">Oldest first</option>
+              <option value="popular">Most liked</option>
+            </select>
+          </div>
         </div>
 
         {error && (
