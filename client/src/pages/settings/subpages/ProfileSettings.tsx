@@ -9,6 +9,7 @@ export default function ProfileSettings() {
     location: "",
     pronouns: "",
     link: "",
+    isPrivate: false,
   });
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -26,14 +27,13 @@ export default function ProfileSettings() {
 
         setForm({
           avatar: null,
-          avatarUrl: data.avatar
-            ? `${"http://localhost:5555"}${data.avatar}`
-            : "",
+          avatarUrl: data.avatar ? `http://localhost:5555${data.avatar}` : "",
           name: data.name || "",
           bio: data.bio || "",
           location: data.location || "",
           pronouns: data.pronouns || "",
           link: data.link || "",
+          isPrivate: Boolean(data.isPrivate),
         });
       } catch (err) {
         console.error("Failed to fetch profile:", err);
@@ -57,6 +57,7 @@ export default function ProfileSettings() {
     formData.append("location", form.location);
     formData.append("pronouns", form.pronouns);
     formData.append("link", form.link);
+    formData.append("isPrivate", String(form.isPrivate));
 
     if (form.avatar) {
       formData.append("avatar", form.avatar);
@@ -73,6 +74,7 @@ export default function ProfileSettings() {
 
       const data = await res.json();
       console.log("Profile updated:", data);
+      alert("Profile updated successfully");
     } catch (err) {
       console.error("Error updating profile:", err);
     }
@@ -85,7 +87,6 @@ export default function ProfileSettings() {
       </h1>
 
       <div className="flex items-center space-x-4 mt-4">
-        {/* Avatar */}
         <div className="relative w-36 h-36">
           <img
             src={
@@ -98,7 +99,6 @@ export default function ProfileSettings() {
             className="w-36 h-36 rounded-full object-cover"
           />
 
-          {/* Edit icon */}
           <button
             type="button"
             onClick={openFilePicker}
@@ -108,7 +108,6 @@ export default function ProfileSettings() {
           </button>
         </div>
 
-        {/* Hidden input */}
         <input
           ref={fileInputRef}
           type="file"
@@ -125,9 +124,8 @@ export default function ProfileSettings() {
         />
       </div>
 
-      {/* Name */}
       <div className="mt-4">
-        <label className=" text-sm font-bold mb-1">Name</label>
+        <label className="text-sm font-bold mb-1 block">Name</label>
         <input
           type="text"
           value={form.name}
@@ -136,9 +134,8 @@ export default function ProfileSettings() {
         />
       </div>
 
-      {/* Bio */}
       <div className="mt-2">
-        <label className=" text-sm font-bold mb-1">Bio</label>
+        <label className="text-sm font-bold mb-1 block">Bio</label>
         <input
           type="text"
           value={form.bio}
@@ -147,9 +144,8 @@ export default function ProfileSettings() {
         />
       </div>
 
-      {/* Location */}
       <div className="mt-2">
-        <label className=" text-sm font-bold mb-1">Location</label>
+        <label className="text-sm font-bold mb-1 block">Location</label>
         <input
           type="text"
           value={form.location}
@@ -158,9 +154,8 @@ export default function ProfileSettings() {
         />
       </div>
 
-      {/* Pronouns */}
       <div className="mt-2">
-        <label className=" text-sm font-bold mb-1">Pronouns</label>
+        <label className="text-sm font-bold mb-1 block">Pronouns</label>
         <input
           type="text"
           value={form.pronouns}
@@ -169,15 +164,39 @@ export default function ProfileSettings() {
         />
       </div>
 
-      {/* Link */}
       <div className="mt-2">
-        <label className=" text-sm font-bold mb-1">Link</label>
+        <label className="text-sm font-bold mb-1 block">Link</label>
         <input
           type="text"
           value={form.link}
           onChange={(e) => setForm({ ...form, link: e.target.value })}
           className="w-full py-1 border-b border-gray-300 focus:outline-none"
         />
+      </div>
+
+      <div className="mt-6 flex items-center justify-between rounded-xl border p-4">
+        <div>
+          <p className="font-semibold">Private account</p>
+          <p className="text-sm text-gray-500">
+            Only approved followers can view your full profile.
+          </p>
+        </div>
+
+        <button
+          type="button"
+          onClick={() =>
+            setForm((prev) => ({ ...prev, isPrivate: !prev.isPrivate }))
+          }
+          className={`relative h-7 w-14 rounded-full transition ${
+            form.isPrivate ? "bg-gray-900" : "bg-gray-300"
+          }`}
+        >
+          <span
+            className={`absolute top-1 h-5 w-5 rounded-full bg-white transition ${
+              form.isPrivate ? "left-8" : "left-1"
+            }`}
+          />
+        </button>
       </div>
 
       <button

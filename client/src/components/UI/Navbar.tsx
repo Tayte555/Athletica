@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import UserDropdown from "./UserDropdown";
+import NotificationBell from "./NotificationBell";
 
 export default function Navbar() {
   const token = localStorage.getItem("token");
@@ -28,6 +29,7 @@ export default function Navbar() {
         });
 
         const data = await res.json();
+
         setUser({
           ...data,
           avatar: data.avatar
@@ -45,8 +47,8 @@ export default function Navbar() {
   }, [token]);
 
   return (
-    <nav className="bg-gray-800 text-white p-4 grid grid-cols-3 h-32">
-      <div className="text-xl flex items-center justify-start ml-10">
+    <nav className="grid h-32 grid-cols-3 bg-gray-800 p-4 text-white">
+      <div className="ml-10 flex items-center justify-start text-xl">
         <a href="/" className="hover:cursor-pointer">
           Athletica
         </a>
@@ -67,14 +69,21 @@ export default function Navbar() {
         </a>
       </div>
 
-      <div className="flex items-center justify-end mr-10 text-xl">
+      <div className="mr-10 flex items-center justify-end text-xl">
         {!token && (
           <a href="/login" className="hover:cursor-pointer">
             Login
           </a>
         )}
+
         {token && loading && <span>Loading...</span>}
-        {token && user && <UserDropdown user={user} />}
+
+        {token && user && (
+          <>
+            <NotificationBell />
+            <UserDropdown user={user} />
+          </>
+        )}
       </div>
     </nav>
   );

@@ -5,6 +5,7 @@ import authRoutes from "./routes/auth.routes.js";
 import userRoutes from "./routes/user.routes.js";
 import exerciseRoutes from "./routes/exercise.routes.js";
 import routineRoutes from "./routes/routine.routes.js";
+import notificationRoutes from "./routes/notification.routes.js";
 
 const app = express();
 
@@ -16,6 +17,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/user", userRoutes);
 app.use("/api/exercises", exerciseRoutes);
 app.use("/api/routines", routineRoutes);
+app.use("/api/notifications", notificationRoutes);
 app.use("/uploads", express.static("server/uploads"));
 
 export default app;

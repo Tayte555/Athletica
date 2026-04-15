@@ -5,6 +5,10 @@ import Routine from "../models/Routine.model.js";
 import Exercise from "../models/Exercise.model.js";
 import User from "../models/User.model.js";
 import Comment from "../models/Comment.model.js";
+import {
+  createNotification,
+  createNotificationsForFollowers,
+} from "../utils/notification.utils.js";
 
 const router = express.Router();
 
@@ -313,10 +317,9 @@ router.get("/search", async (req, res) => {
 
 router.post("/:id/like", protect, async (req, res) => {
   try {
-    const routine = await Routine.findById(req.params.id).populate(
-      "createdBy",
-      "username name avatar",
-    );
+    const routine = await Routine.findById(req.params.id)
+      .populate("createdBy", "username name avatar")
+      .populate("likes", "_id");
 
     if (!routine) {
       return res.status(404).json({ message: "Routine not found" });
@@ -329,6 +332,17 @@ router.post("/:id/like", protect, async (req, res) => {
       routine.likes = routine.likes.filter((id) => id.toString() !== userId);
     } else {
       routine.likes.push(req.userId);
+      const actorUser = await User.findById(req.userId).select("username");
+
+      await createNotification({
+        recipient: routine.createdBy._id || routine.createdBy,
+        actor: req.userId,
+        type: "routine_liked",
+        title: "Routine liked",
+        message: `${actorUser.username} liked your routine "${routine.title}"`,
+        entityType: "routine",
+        entityId: routine._id,
+      });
     }
 
     await routine.save();
@@ -365,7 +379,11 @@ router.post("/:id/comments", protect, async (req, res) => {
       return res.status(400).json({ message: "Comment text is required" });
     }
 
-    const routine = await Routine.findById(req.params.id);
+    const routine = await Routine.findById(req.params.id).populate(
+      "createdBy",
+      "username name avatar",
+    );
+
     if (!routine) {
       return res.status(404).json({ message: "Routine not found" });
     }
@@ -380,6 +398,18 @@ router.post("/:id/comments", protect, async (req, res) => {
       "user",
       "username name avatar",
     );
+
+    const actorUser = await User.findById(req.userId).select("username");
+
+    await createNotification({
+      recipient: routine.createdBy._id || routine.createdBy,
+      actor: req.userId,
+      type: "routine_commented",
+      title: "New comment",
+      message: `${actorUser.username} commented on your routine "${routine.title}"`,
+      entityType: "routine",
+      entityId: routine._id,
+    });
 
     res.status(201).json(populatedComment);
   } catch (error) {
@@ -517,8 +547,22 @@ router.post("/", protect, async (req, res) => {
     });
 
     const populated = await Routine.findById(routine._id)
-      .populate("createdBy", "username name avatar")
+      .populate("createdBy", "username name avatar followers")
       .populate("exercises.exercise");
+
+    const creator = await User.findById(req.userId).select(
+      "username followers",
+    );
+
+    if (creator?.followers?.length) {
+      await createNotificationsForFollowers({
+        actorId: req.userId,
+        followers: creator.followers,
+        routineId: routine._id,
+        actorUsername: creator.username,
+        routineTitle: routine.title,
+      });
+    }
 
     res.status(201).json(formatRoutineForResponse(populated, req.userId));
   } catch (error) {
@@ -616,19 +660,42 @@ router.delete("/:id", protect, async (req, res) => {
 
 router.post("/:id/save", protect, async (req, res) => {
   try {
-    const routine = await Routine.findByIdAndUpdate(
-      req.params.id,
-      { $addToSet: { savedBy: req.userId } },
-      { new: true },
-    )
-      .populate("createdBy", "username name avatar")
-      .populate("exercises.exercise");
+    const routine = await Routine.findById(req.params.id).populate(
+      "createdBy",
+      "username name avatar",
+    );
 
     if (!routine) {
       return res.status(404).json({ message: "Routine not found" });
     }
 
-    res.json(formatRoutineForResponse(routine, req.userId));
+    const alreadySaved = routine.savedBy.some(
+      (id) => String(id) === String(req.userId),
+    );
+
+    if (!alreadySaved) {
+      routine.savedBy.push(req.userId);
+
+      const actorUser = await User.findById(req.userId).select("username");
+
+      await createNotification({
+        recipient: routine.createdBy._id || routine.createdBy,
+        actor: req.userId,
+        type: "routine_saved",
+        title: "Routine saved",
+        message: `${actorUser.username} saved your routine "${routine.title}"`,
+        entityType: "routine",
+        entityId: routine._id,
+      });
+    }
+
+    await routine.save();
+
+    const updatedRoutine = await Routine.findById(routine._id)
+      .populate("createdBy", "username name avatar")
+      .populate("exercises.exercise");
+
+    res.json(formatRoutineForResponse(updatedRoutine, req.userId));
   } catch (error) {
     console.error("Error saving routine:", error);
     res.status(500).json({ message: "Server error" });

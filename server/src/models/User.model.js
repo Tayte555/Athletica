@@ -1,8 +1,20 @@
 import mongoose from "mongoose";
 
+const notificationPreferencesSchema = new mongoose.Schema(
+  {
+    followRequests: { type: Boolean, default: true },
+    follows: { type: Boolean, default: true },
+    followAccepted: { type: Boolean, default: true },
+    routineCreated: { type: Boolean, default: true },
+    likes: { type: Boolean, default: true },
+    comments: { type: Boolean, default: true },
+    saves: { type: Boolean, default: true },
+  },
+  { _id: false },
+);
+
 const userSchema = new mongoose.Schema(
   {
-    // Required profile fields
     email: {
       type: String,
       required: true,
@@ -21,7 +33,6 @@ const userSchema = new mongoose.Schema(
       required: true,
     },
 
-    // Optional profile fields
     avatar: {
       type: String,
       default: "",
@@ -42,9 +53,41 @@ const userSchema = new mongoose.Schema(
       type: String,
       default: "",
     },
+    link: {
+      type: String,
+      default: "",
+    },
     socialLinks: {
       type: Map,
       of: String,
+    },
+
+    isPrivate: {
+      type: Boolean,
+      default: false,
+    },
+    followers: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+      },
+    ],
+    following: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+      },
+    ],
+    followRequests: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+      },
+    ],
+
+    notificationPreferences: {
+      type: notificationPreferencesSchema,
+      default: () => ({}),
     },
   },
   { timestamps: true, collection: "Users" },
