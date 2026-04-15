@@ -4,7 +4,8 @@ import Navbar from "../../components/UI/Navbar";
 import Footer from "../../components/UI/Footer";
 import { apiDelete, apiGet, apiPost } from "../../lib/routineApi";
 import type { Routine } from "../../types/routine";
-import { Heart, MessageCircle } from "lucide-react";
+import { Bookmark, Edit, Heart, MessageCircle } from "lucide-react";
+import ShareRoutineButton from "../../components/routines/ShareRoutineButton";
 
 type RoutineComment = {
   _id: string;
@@ -274,51 +275,69 @@ export default function RoutineDetailsPage() {
               {routine.isOwner && (
                 <Link
                   to={`/routines/${routine._id}/edit`}
-                  className="mt-4 block w-full rounded-xl border border-black/10 px-4 py-3 text-center text-sm font-medium transition hover:bg-black/5"
+                  className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl border border-black/10 px-4 py-3 text-sm font-medium transition hover:bg-black/5"
                 >
+                  <Edit size={16} />
                   Edit Routine
                 </Link>
               )}
 
-              <button
-                onClick={handleSaveToggle}
-                disabled={saveLoading}
-                className="mt-4 w-full rounded-xl bg-black px-4 py-3 text-sm font-medium text-white transition hover:opacity-90 disabled:opacity-60"
-              >
-                {saveLoading
-                  ? "Updating..."
-                  : routine.isSaved
-                    ? "Unsave Routine"
-                    : "Save Routine"}
-              </button>
-
-              <button
-                onClick={handleLikeToggle}
-                disabled={likeLoading}
-                className={`mt-3 flex w-full items-center justify-center gap-2 rounded-xl border px-4 py-3 text-sm font-medium transition disabled:opacity-60 ${
-                  routine.isLiked
-                    ? "border-black bg-black text-white"
-                    : "border-black/10 bg-white hover:bg-black/5"
-                }`}
-              >
-                <Heart
-                  size={16}
-                  fill={routine.isLiked ? "currentColor" : "none"}
+              <div className="grid grid-cols-2 gap-3">
+                <ShareRoutineButton
+                  routineId={routine._id}
+                  title={routine.title}
+                  className="w-full"
                 />
-                {likeLoading
-                  ? "Updating..."
-                  : routine.isLiked
-                    ? "Unlike Routine"
-                    : "Like Routine"}
-              </button>
+                <a
+                  href="#comments"
+                  className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl border border-black/10 px-4 py-3 text-sm font-medium transition hover:bg-black/5"
+                >
+                  <MessageCircle size={16} />
+                  Comments ({comments.length})
+                </a>
+              </div>
 
-              <a
-                href="#comments"
-                className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-black/10 px-4 py-3 text-sm font-medium transition hover:bg-black/5"
-              >
-                <MessageCircle size={16} />
-                Jump to Comments ({comments.length})
-              </a>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  onClick={handleLikeToggle}
+                  disabled={likeLoading}
+                  className={`mt-4 flex w-full items-center justify-center gap-2 rounded-xl border px-4 py-3 text-sm font-medium transition disabled:opacity-60 ${
+                    routine.isLiked
+                      ? "border-black bg-black text-white"
+                      : "border-black/10 bg-white hover:bg-black/5"
+                  }`}
+                >
+                  <Heart
+                    size={16}
+                    fill={routine.isLiked ? "currentColor" : "none"}
+                  />
+                  {likeLoading
+                    ? "Updating..."
+                    : routine.isLiked
+                      ? "Unlike Routine"
+                      : "Like Routine"}
+                </button>
+                <button
+                  onClick={handleSaveToggle}
+                  disabled={saveLoading}
+                  className={`mt-4 flex w-full items-center justify-center gap-2 rounded-xl border px-4 py-3 text-sm font-medium transition disabled:opacity-60 ${
+                    routine.isSaved
+                      ? "border-black bg-black text-white"
+                      : "border-black/10 bg-white hover:bg-black/5"
+                  }`}
+                >
+                  <Bookmark
+                    size={16}
+                    fill={routine.isSaved ? "currentColor" : "none"}
+                  />
+
+                  {saveLoading
+                    ? "Updating..."
+                    : routine.isSaved
+                      ? "Unsave Routine"
+                      : "Save Routine"}
+                </button>
+              </div>
             </div>
           </div>
         </section>

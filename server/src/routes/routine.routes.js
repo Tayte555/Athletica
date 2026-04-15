@@ -317,21 +317,36 @@ router.get("/search", async (req, res) => {
 
 router.post("/:id/like", protect, async (req, res) => {
   try {
-    const routine = await Routine.findById(req.params.id)
-      .populate("createdBy", "username name avatar")
-      .populate("likes", "_id");
+    const routine = await Routine.findById(req.params.id).populate(
+      "createdBy",
+      "username name avatar",
+    );
 
     if (!routine) {
       return res.status(404).json({ message: "Routine not found" });
     }
 
-    const userId = req.userId.toString();
-    const alreadyLiked = routine.likes.some((id) => id.toString() === userId);
+    const userId = String(req.userId);
+
+    const alreadyLiked = routine.likes.some(
+      (likeUserId) => String(likeUserId) === userId,
+    );
+
+    let updatedRoutine;
 
     if (alreadyLiked) {
-      routine.likes = routine.likes.filter((id) => id.toString() !== userId);
+      updatedRoutine = await Routine.findByIdAndUpdate(
+        req.params.id,
+        { $pull: { likes: req.userId } },
+        { new: true },
+      );
     } else {
-      routine.likes.push(req.userId);
+      updatedRoutine = await Routine.findByIdAndUpdate(
+        req.params.id,
+        { $addToSet: { likes: req.userId } },
+        { new: true },
+      );
+
       const actorUser = await User.findById(req.userId).select("username");
 
       await createNotification({
@@ -345,12 +360,14 @@ router.post("/:id/like", protect, async (req, res) => {
       });
     }
 
-    await routine.save();
+    const isLiked = updatedRoutine.likes.some(
+      (likeUserId) => String(likeUserId) === userId,
+    );
 
     res.json({
-      _id: routine._id,
-      likesCount: routine.likes.length,
-      isLiked: routine.likes.some((id) => id.toString() === userId),
+      _id: updatedRoutine._id,
+      likesCount: updatedRoutine.likes.length,
+      isLiked,
     });
   } catch (error) {
     console.error("Like routine error:", error);
