@@ -4,8 +4,9 @@ import Navbar from "../../components/UI/Navbar";
 import Footer from "../../components/UI/Footer";
 import { apiDelete, apiGet, apiPost } from "../../lib/routineApi";
 import type { Routine } from "../../types/routine";
-import { Bookmark, Edit, Heart, MessageCircle } from "lucide-react";
+import { Bookmark, Edit, Heart, MessageCircle, Sparkles } from "lucide-react";
 import ShareRoutineButton from "../../components/routines/ShareRoutineButton";
+import OptimiseRoutineModal from "../../components/routines/OptimiseRoutineModal";
 
 type RoutineComment = {
   _id: string;
@@ -29,6 +30,7 @@ export default function RoutineDetailsPage() {
   const [saveLoading, setSaveLoading] = useState(false);
   const [likeLoading, setLikeLoading] = useState(false);
   const [commentLoading, setCommentLoading] = useState(false);
+  const [showOptimiseModal, setShowOptimiseModal] = useState(false);
 
   const navigate = useNavigate();
 
@@ -273,16 +275,27 @@ export default function RoutineDetailsPage() {
               </div>
 
               {routine.isOwner && (
-                <Link
-                  to={`/routines/${routine._id}/edit`}
-                  className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl border border-black/10 px-4 py-3 text-sm font-medium transition hover:bg-black/5"
-                >
-                  <Edit size={16} />
-                  Edit Routine
-                </Link>
+                <div className="mt-4 grid grid-cols-2 gap-3">
+                  <Link
+                    to={`/routines/${routine._id}/edit`}
+                    className="flex w-full items-center justify-center gap-2 rounded-xl border border-black/10 px-4 py-3 text-sm font-medium transition hover:bg-black/5"
+                  >
+                    <Edit size={16} />
+                    Edit Routine
+                  </Link>
+
+                  <button
+                    type="button"
+                    onClick={() => setShowOptimiseModal(true)}
+                    className="flex w-full items-center justify-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm font-medium text-blue-700 transition hover:bg-blue-100"
+                  >
+                    <Sparkles size={16} />
+                    Optimise
+                  </button>
+                </div>
               )}
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className=" grid grid-cols-2 gap-3">
                 <ShareRoutineButton
                   routineId={routine._id}
                   title={routine.title}
@@ -297,11 +310,11 @@ export default function RoutineDetailsPage() {
                 </a>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="mt-4 grid grid-cols-2 gap-3">
                 <button
                   onClick={handleLikeToggle}
                   disabled={likeLoading}
-                  className={`mt-4 flex w-full items-center justify-center gap-2 rounded-xl border px-4 py-3 text-sm font-medium transition disabled:opacity-60 ${
+                  className={`flex w-full items-center justify-center gap-2 rounded-xl border px-4 py-3 text-sm font-medium transition disabled:opacity-60 ${
                     routine.isLiked
                       ? "border-black bg-black text-white"
                       : "border-black/10 bg-white hover:bg-black/5"
@@ -317,10 +330,11 @@ export default function RoutineDetailsPage() {
                       ? "Unlike Routine"
                       : "Like Routine"}
                 </button>
+
                 <button
                   onClick={handleSaveToggle}
                   disabled={saveLoading}
-                  className={`mt-4 flex w-full items-center justify-center gap-2 rounded-xl border px-4 py-3 text-sm font-medium transition disabled:opacity-60 ${
+                  className={`flex w-full items-center justify-center gap-2 rounded-xl border px-4 py-3 text-sm font-medium transition disabled:opacity-60 ${
                     routine.isSaved
                       ? "border-black bg-black text-white"
                       : "border-black/10 bg-white hover:bg-black/5"
@@ -502,6 +516,15 @@ export default function RoutineDetailsPage() {
           )}
         </section>
       </main>
+
+      {routine.isOwner && (
+        <OptimiseRoutineModal
+          isOpen={showOptimiseModal}
+          onClose={() => setShowOptimiseModal(false)}
+          routineId={routine._id}
+          routineTitle={routine.title}
+        />
+      )}
 
       <Footer />
     </div>

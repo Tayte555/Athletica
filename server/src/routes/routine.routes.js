@@ -1,4 +1,5 @@
 import express from "express";
+import mongoose from "mongoose";
 import jwt from "jsonwebtoken";
 import { protect } from "../middleware/auth.middleware.js";
 import Routine from "../models/Routine.model.js";
@@ -163,6 +164,274 @@ function formatRoutineForResponse(routine, currentUserId = null) {
     commentsCount: routineObj.commentsCount || 0,
   };
 }
+
+function toObjectIdString(value) {
+  if (!value) return "";
+  if (typeof value === "string") return value;
+  if (value._id) return String(value._id);
+  return String(value);
+}
+
+function getExerciseName(exerciseItem) {
+  if (!exerciseItem) return "";
+
+  if (exerciseItem.customExercise?.name?.trim()) {
+    return exerciseItem.customExercise.name.trim();
+  }
+
+  if (exerciseItem.exercise?.name?.trim()) {
+    return exerciseItem.exercise.name.trim();
+  }
+
+  return "";
+}
+
+function getExerciseIdOrKey(exerciseItem) {
+  if (!exerciseItem) return "";
+
+  if (exerciseItem.exercise) {
+    return `db:${toObjectIdString(exerciseItem.exercise)}`;
+  }
+
+  if (exerciseItem.customExercise?.name?.trim()) {
+    return `custom:${exerciseItem.customExercise.name.trim().toLowerCase()}`;
+  }
+
+  return "";
+}
+
+function normaliseStringArray(arr = []) {
+  return (arr || [])
+    .map((item) => String(item).trim().toLowerCase())
+    .filter(Boolean);
+}
+
+function countOverlap(arrA = [], arrB = []) {
+  const setB = new Set(normaliseStringArray(arrB));
+  return normaliseStringArray(arrA).filter((item) => setB.has(item)).length;
+}
+
+function calculateRoutinePopularityScore(routine) {
+  const likes = routine.likes?.length || 0;
+  const saves = routine.savedBy?.length || 0;
+  const comments = routine.commentCount || 0;
+
+  return likes * 3 + saves * 4 + comments * 2;
+}
+
+function calculateSimilarityScore(baseRoutine, candidateRoutine) {
+  let score = 0;
+
+  if (
+    baseRoutine.difficulty &&
+    candidateRoutine.difficulty &&
+    String(baseRoutine.difficulty).toLowerCase() ===
+      String(candidateRoutine.difficulty).toLowerCase()
+  ) {
+    score += 5;
+  }
+
+  if (
+    baseRoutine.workoutType &&
+    candidateRoutine.workoutType &&
+    String(baseRoutine.workoutType).toLowerCase() ===
+      String(candidateRoutine.workoutType).toLowerCase()
+  ) {
+    score += 4;
+  }
+
+  score += countOverlap(baseRoutine.tags, candidateRoutine.tags) * 3;
+  score +=
+    countOverlap(baseRoutine.targetMuscles, candidateRoutine.targetMuscles) * 2;
+  score += countOverlap(baseRoutine.equipment, candidateRoutine.equipment) * 1;
+
+  return score;
+}
+
+router.post("/:id/optimise", protect, async (req, res) => {
+  try {
+    const routine = await Routine.findById(req.params.id)
+      .populate("createdBy", "username")
+      .populate("exercises.exercise", "name");
+
+    if (!routine) {
+      return res.status(404).json({ message: "Routine not found" });
+    }
+
+    if (
+      String(routine.createdBy._id || routine.createdBy) !== String(req.userId)
+    ) {
+      return res.status(403).json({
+        message: "You can only optimise your own routines",
+      });
+    }
+
+    const now = new Date();
+    const ninetyDaysAgo = new Date(now);
+    ninetyDaysAgo.setDate(now.getDate() - 90);
+
+    const currentExerciseKeys = new Set(
+      (routine.exercises || [])
+        .map((item) => getExerciseIdOrKey(item))
+        .filter(Boolean),
+    );
+
+    const baseQuery = {
+      _id: { $ne: routine._id },
+      isPublic: true,
+      $or: [
+        { difficulty: routine.difficulty },
+        { workoutType: routine.workoutType },
+        { tags: { $in: routine.tags || [] } },
+        { targetMuscles: { $in: routine.targetMuscles || [] } },
+      ],
+    };
+
+    const recentCandidatesRaw = await Routine.find({
+      ...baseQuery,
+      createdAt: { $gte: ninetyDaysAgo },
+    })
+      .populate("exercises.exercise", "name")
+      .lean();
+
+    let usedFallback = false;
+    let candidatePool = recentCandidatesRaw;
+
+    if (recentCandidatesRaw.length < 5) {
+      usedFallback = true;
+
+      candidatePool = await Routine.find(baseQuery)
+        .populate("exercises.exercise", "name")
+        .lean();
+    }
+
+    if (!candidatePool.length || candidatePool.length < 3) {
+      return res.json({
+        success: true,
+        couldOptimise: false,
+        noData: true,
+        message: "Could not optimise this routine due to lack of data.",
+        usedFallback,
+        addSuggestions: [],
+        removeSuggestions: [],
+        analysedRoutineCount: candidatePool.length || 0,
+      });
+    }
+
+    const scoredCandidates = candidatePool
+      .map((candidate) => ({
+        ...candidate,
+        similarityScore: calculateSimilarityScore(routine, candidate),
+        popularityScore: calculateRoutinePopularityScore(candidate),
+      }))
+      .filter((candidate) => candidate.similarityScore > 0)
+      .sort((a, b) => {
+        const scoreA = a.similarityScore * 10 + a.popularityScore;
+        const scoreB = b.similarityScore * 10 + b.popularityScore;
+        return scoreB - scoreA;
+      })
+      .slice(0, 10);
+
+    if (scoredCandidates.length < 3) {
+      return res.json({
+        success: true,
+        couldOptimise: false,
+        noData: true,
+        message: "Could not optimise this routine due to lack of data.",
+        usedFallback,
+        addSuggestions: [],
+        removeSuggestions: [],
+        analysedRoutineCount: scoredCandidates.length,
+      });
+    }
+
+    const frequencyMap = new Map();
+
+    for (const candidate of scoredCandidates) {
+      for (const exerciseItem of candidate.exercises || []) {
+        const key = getExerciseIdOrKey(exerciseItem);
+        const name = getExerciseName(exerciseItem);
+
+        if (!key || !name) continue;
+
+        if (!frequencyMap.has(key)) {
+          frequencyMap.set(key, {
+            key,
+            name,
+            count: 0,
+            presentInCurrentRoutine: currentExerciseKeys.has(key),
+          });
+        }
+
+        frequencyMap.get(key).count += 1;
+      }
+    }
+
+    const addSuggestions = [];
+    const removeSuggestions = [];
+
+    const candidateCount = scoredCandidates.length;
+    const strongIncludeThreshold = Math.max(3, Math.ceil(candidateCount * 0.4));
+    const weakIncludeThreshold = Math.max(1, Math.floor(candidateCount * 0.2));
+
+    for (const [, item] of frequencyMap.entries()) {
+      if (
+        !item.presentInCurrentRoutine &&
+        item.count >= strongIncludeThreshold
+      ) {
+        addSuggestions.push({
+          key: item.key,
+          name: item.name,
+          frequency: item.count,
+          reason: `Appears in ${item.count} of ${candidateCount} similar popular routines.`,
+        });
+      }
+    }
+
+    for (const exerciseItem of routine.exercises || []) {
+      const key = getExerciseIdOrKey(exerciseItem);
+      const name = getExerciseName(exerciseItem);
+
+      if (!key || !name) continue;
+
+      const frequency = frequencyMap.get(key)?.count || 0;
+
+      if (frequency <= weakIncludeThreshold) {
+        removeSuggestions.push({
+          key,
+          name,
+          frequency,
+          reason:
+            frequency === 0
+              ? "Did not appear in the similar routines analysed."
+              : `Only appeared in ${frequency} of ${candidateCount} similar popular routines.`,
+        });
+      }
+    }
+
+    addSuggestions.sort((a, b) => b.frequency - a.frequency);
+    removeSuggestions.sort((a, b) => a.frequency - b.frequency);
+
+    const hasSuggestions =
+      addSuggestions.length > 0 || removeSuggestions.length > 0;
+
+    res.json({
+      success: true,
+      couldOptimise: hasSuggestions,
+      noData: false,
+      message: hasSuggestions
+        ? "Optimisation suggestions generated successfully."
+        : "No strong optimisation suggestions were found.",
+      usedFallback,
+      analysedRoutineCount: scoredCandidates.length,
+      addSuggestions: addSuggestions.slice(0, 8),
+      removeSuggestions: removeSuggestions.slice(0, 6),
+    });
+  } catch (error) {
+    console.error("Optimise routine error:", error);
+    res.status(500).json({ message: "Failed to optimise routine" });
+  }
+});
 
 router.get("/search", async (req, res) => {
   try {
