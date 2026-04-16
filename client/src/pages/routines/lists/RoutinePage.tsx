@@ -1,23 +1,24 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import Navbar from "../../../components/UI/Navbar";
 import Footer from "../../../components/UI/Footer";
 import { apiDelete, apiGet, apiPost } from "../../../lib/routineApi";
 import type { Routine } from "../../../types/routine";
 import {
-  Search,
   Star,
   Plus,
   Bookmark,
   FolderOpen,
   Compass,
   ArrowRight,
+  Users,
 } from "lucide-react";
 
 export default function RoutinePage() {
   const [routines, setRoutines] = useState<Routine[]>([]);
-  const [search, setSearch] = useState("");
+  const [followingRoutines, setFollowingRoutines] = useState<Routine[]>([]);
   const [loading, setLoading] = useState(true);
+  const [followingLoading, setFollowingLoading] = useState(true);
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -38,18 +39,29 @@ export default function RoutinePage() {
     fetchRoutines();
   }, []);
 
-  const filteredRoutines = useMemo(() => {
-    return routines.filter((routine) => {
-      const value = search.toLowerCase();
-      return (
-        routine.title.toLowerCase().includes(value) ||
-        routine.description.toLowerCase().includes(value) ||
-        routine.tags?.some((tag) => tag.toLowerCase().includes(value)) ||
-        routine.createdBy?.username?.toLowerCase().includes(value) ||
-        routine.createdBy?.name?.toLowerCase().includes(value)
-      );
-    });
-  }, [routines, search]);
+  useEffect(() => {
+    const fetchFollowingRoutines = async () => {
+      try {
+        setFollowingLoading(true);
+        const data = await apiGet<Routine[]>(
+          "/api/routines/recommended?context=routines&limit=3",
+        );
+        setFollowingRoutines(data);
+      } catch (err) {
+        setError(
+          err instanceof Error
+            ? err.message
+            : "Failed to load suggested routines",
+        );
+      } finally {
+        setFollowingLoading(false);
+      }
+    };
+
+    fetchFollowingRoutines();
+  }, []);
+
+  const visiblePublicRoutines = routines.slice(0, 3);
 
   const toggleSave = async (routine: Routine) => {
     try {
@@ -58,6 +70,10 @@ export default function RoutinePage() {
         : await apiPost<Routine>(`/api/routines/${routine._id}/save`);
 
       setRoutines((prev) =>
+        prev.map((item) => (item._id === updated._id ? updated : item)),
+      );
+
+      setFollowingRoutines((prev) =>
         prev.map((item) => (item._id === updated._id ? updated : item)),
       );
     } catch (err) {
@@ -80,8 +96,7 @@ export default function RoutinePage() {
             Routines
           </h1>
           <p className="mt-3 max-w-2xl text-base text-[#555]">
-            Create your own routines, manage your workouts, save routines you
-            like, and explore what the community has shared.
+            Create, save and explore workout routines from the community.
           </p>
         </section>
 
@@ -95,7 +110,7 @@ export default function RoutinePage() {
             </div>
             <h2 className="text-2xl font-semibold">Create Routine</h2>
             <p className="mt-2 text-sm text-[#666]">
-              Build a brand new workout routine with preset or custom exercises.
+              Build a brand new workout routine.
             </p>
             <div className="mt-6 inline-flex items-center gap-2 text-sm font-medium">
               Go to creator
@@ -115,7 +130,7 @@ export default function RoutinePage() {
             </div>
             <h2 className="text-2xl font-semibold">My Routines</h2>
             <p className="mt-2 text-sm text-[#666]">
-              View, manage and delete the routines you have created.
+              View and manage your created routines.
             </p>
             <div className="mt-6 inline-flex items-center gap-2 text-sm font-medium">
               Open your routines
@@ -135,7 +150,7 @@ export default function RoutinePage() {
             </div>
             <h2 className="text-2xl font-semibold">Saved Routines</h2>
             <p className="mt-2 text-sm text-[#666]">
-              Revisit routines you have saved from the community.
+              Revisit routines you have saved.
             </p>
             <div className="mt-6 inline-flex items-center gap-2 text-sm font-medium">
               View saved
@@ -155,7 +170,7 @@ export default function RoutinePage() {
             </div>
             <h2 className="text-2xl font-semibold">Discover</h2>
             <p className="mt-2 text-sm text-[#666]">
-              Discover public routines shared by other users.
+              Explore public routines from other users.
             </p>
             <div className="mt-6 inline-flex items-center gap-2 text-sm font-medium">
               Browse community
@@ -167,42 +182,100 @@ export default function RoutinePage() {
           </Link>
         </section>
 
-        <section className="mb-8 rounded-[28px] border border-black/10 bg-white p-6 shadow-sm">
-          <div className="grid gap-6 lg:grid-cols-[1fr_auto] lg:items-end">
-            <div>
-              <p className="mb-2 text-sm uppercase tracking-[0.18em] text-[#777]">
-                Quick actions
-              </p>
-              <h2 className="text-2xl font-bold md:text-3xl">
-                Get started faster
-              </h2>
-              <p className="mt-2 max-w-2xl text-sm text-[#666]">
-                Jump straight into creating a routine, managing your own, or
-                browsing community workout plans.
-              </p>
+        <section className="mb-12">
+          <div className="mb-5 flex items-start gap-4">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-black text-white">
+              <Users size={20} />
             </div>
 
-            <div className="flex flex-wrap gap-3">
-              <Link
-                to="/routines/create"
-                className="rounded-xl bg-black px-4 py-2.5 text-sm font-medium text-white transition hover:opacity-90"
-              >
-                Create Routine
-              </Link>
-              <Link
-                to="/routines/my-routines"
-                className="rounded-xl border border-black/10 px-4 py-2.5 text-sm font-medium transition hover:bg-black/5"
-              >
-                My Routines
-              </Link>
-              <Link
-                to="/routines/saved"
-                className="rounded-xl border border-black/10 px-4 py-2.5 text-sm font-medium transition hover:bg-black/5"
-              >
-                Saved Routines
-              </Link>
+            <div>
+              <p className="mb-2 text-sm uppercase tracking-[0.18em] text-[#777]">
+                Suggested routines
+              </p>
+              <h2 className="text-2xl font-bold md:text-4xl">
+                From people you follow
+              </h2>
+              <p className="mt-2 max-w-2xl text-sm text-[#666]">
+                Recently created public routines from accounts you follow.
+              </p>
             </div>
           </div>
+
+          {followingLoading ? (
+            <p className="text-sm text-[#666]">Loading suggested routines...</p>
+          ) : followingRoutines.length === 0 ? (
+            <div className="rounded-[24px] border border-dashed border-black/10 bg-white p-6 text-sm text-[#666]">
+              No followed-user routines to show yet.
+            </div>
+          ) : (
+            <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+              {followingRoutines.map((routine) => (
+                <div
+                  key={routine._id}
+                  className="overflow-hidden rounded-[24px] border border-black/10 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-md"
+                >
+                  <div className="h-[220px] w-full overflow-hidden bg-[#ececec]">
+                    {routine.image ? (
+                      <img
+                        src={routine.image}
+                        alt={routine.title}
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <div className="flex h-full items-center justify-center text-sm text-[#777]">
+                        No cover image
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="space-y-4 p-5">
+                    <div>
+                      <h3 className="text-2xl font-semibold leading-tight">
+                        {routine.title}
+                      </h3>
+                      <p className="mt-1 text-sm text-[#666]">
+                        by{" "}
+                        {routine.createdBy?.name || routine.createdBy?.username}
+                      </p>
+                    </div>
+
+                    <p className="line-clamp-2 text-sm text-[#555]">
+                      {routine.description}
+                    </p>
+
+                    <div className="flex flex-wrap gap-2">
+                      <span className="rounded-full bg-black/5 px-3 py-1 text-xs font-medium">
+                        {routine.difficulty}
+                      </span>
+                      <span className="rounded-full bg-black/5 px-3 py-1 text-xs font-medium">
+                        {routine.durationMinutes} min
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-3 pt-1">
+                      <Link
+                        to={`/routines/${routine._id}`}
+                        className="rounded-xl bg-black px-4 py-2 text-sm font-medium text-white transition hover:opacity-90"
+                      >
+                        View Details
+                      </Link>
+                      <button
+                        onClick={() => toggleSave(routine)}
+                        className="rounded-xl border border-black/10 px-4 py-2 text-sm font-medium transition hover:bg-black/5"
+                      >
+                        {routine.isSaved ? "Saved" : "Save"}
+                      </button>
+                    </div>
+
+                    <div className="flex items-center gap-2 text-sm text-[#444]">
+                      <Star size={15} fill="currentColor" />
+                      <span>{routine.savedByCount || 0} saves</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </section>
 
         <section id="community-routines" className="mb-8">
@@ -217,20 +290,6 @@ export default function RoutinePage() {
               Search through public routines created by other Athletica users.
             </p>
           </div>
-
-          <div className="relative max-w-xl">
-            <Search
-              size={18}
-              className="absolute left-4 top-1/2 -translate-y-1/2 text-[#777]"
-            />
-            <input
-              type="text"
-              placeholder="Search routines..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="h-12 w-full rounded-2xl border border-black/10 bg-white pl-11 pr-4 text-sm outline-none transition focus:border-black/20"
-            />
-          </div>
         </section>
 
         {loading ? (
@@ -239,7 +298,7 @@ export default function RoutinePage() {
           <p className="text-red-600">{error}</p>
         ) : (
           <section className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-            {filteredRoutines.map((routine) => (
+            {visiblePublicRoutines.map((routine) => (
               <div
                 key={routine._id}
                 className="overflow-hidden rounded-[24px] border border-black/10 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-md"
@@ -280,17 +339,6 @@ export default function RoutinePage() {
                     <span className="rounded-full bg-black/5 px-3 py-1 text-xs font-medium">
                       {routine.durationMinutes} min
                     </span>
-                    <span className="rounded-full bg-black/5 px-3 py-1 text-xs font-medium">
-                      {routine.exercises.length} exercises
-                    </span>
-                    {routine.tags?.slice(0, 2).map((tag) => (
-                      <span
-                        key={tag}
-                        className="rounded-full bg-black/5 px-3 py-1 text-xs font-medium"
-                      >
-                        {tag}
-                      </span>
-                    ))}
                   </div>
 
                   <div className="flex items-center gap-3 pt-1">
@@ -316,7 +364,7 @@ export default function RoutinePage() {
               </div>
             ))}
 
-            {filteredRoutines.length === 0 && (
+            {visiblePublicRoutines.length === 0 && (
               <p className="text-sm text-[#666]">No routines found.</p>
             )}
           </section>

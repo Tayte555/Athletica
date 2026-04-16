@@ -433,6 +433,81 @@ router.post("/:id/optimise", protect, async (req, res) => {
   }
 });
 
+router.get("/recommended", protect, async (req, res) => {
+  try {
+    const context =
+      String(req.query.context || "dashboard").toLowerCase() === "routines"
+        ? "routines"
+        : "dashboard";
+
+    const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 3, 1), 10);
+
+    const user = await User.findById(req.userId).select("following");
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    let routines = [];
+
+    if (context === "routines") {
+      const followingIds = user.following || [];
+
+      routines = await Routine.find({
+        isPublic: true,
+        createdBy: { $in: followingIds, $ne: req.userId },
+      })
+        .populate("createdBy", "username name avatar")
+        .populate("exercises.exercise")
+        .sort({ createdAt: -1 })
+        .limit(limit)
+        .lean();
+
+      const withCounts = await attachCommentCounts(routines, req.userId);
+
+      return res.json(withCounts);
+    }
+
+    // Dashboard recommendations:
+    routines = await Routine.find({
+      isPublic: true,
+      createdBy: { $ne: req.userId },
+    })
+      .populate("createdBy", "username name avatar")
+      .populate("exercises.exercise")
+      .lean();
+
+    const scored = routines
+      .map((routine) => {
+        const likes = routine.likes?.length || 0;
+        const saves = routine.savedBy?.length || 0;
+        const popularityScore = likes * 2 + saves * 3;
+
+        return {
+          ...routine,
+          popularityScore,
+        };
+      })
+      .sort((a, b) => {
+        if (b.popularityScore !== a.popularityScore) {
+          return b.popularityScore - a.popularityScore;
+        }
+
+        return (
+          new Date(b.createdAt || 0).getTime() -
+          new Date(a.createdAt || 0).getTime()
+        );
+      })
+      .slice(0, limit);
+
+    const withCounts = await attachCommentCounts(scored, req.userId);
+
+    return res.json(withCounts);
+  } catch (error) {
+    console.error("Recommended routines error:", error);
+    res.status(500).json({ message: "Failed to load recommendations" });
+  }
+});
+
 router.get("/search", async (req, res) => {
   try {
     const currentUserId = getOptionalUserId(req);

@@ -2,11 +2,15 @@ import Footer from "../../components/UI/Footer";
 import Navbar from "../../components/UI/Navbar";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { apiDelete, apiGet, apiPost } from "../../lib/routineApi";
+import type { Routine } from "../../types/routine";
+import { Star, TrendingUp } from "lucide-react";
 
-export default function Dashboard() {
-  const [form, setForm] = useState({
-    username: "",
-  });
+export default function DashboardPage() {
+  const [username, setUsername] = useState("");
+  const [recommendedRoutines, setRecommendedRoutines] = useState<Routine[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -18,10 +22,7 @@ export default function Dashboard() {
           headers: { Authorization: `Bearer ${token}` },
         });
         const data = await res.json();
-
-        setForm({
-          username: data.username || "",
-        });
+        setUsername(data.username || "");
       } catch (err) {
         console.error("Failed to fetch profile:", err);
       }
@@ -30,169 +31,197 @@ export default function Dashboard() {
     fetchProfile();
   }, []);
 
+  useEffect(() => {
+    const fetchRecommendedRoutines = async () => {
+      try {
+        setLoading(true);
+        const data = await apiGet<Routine[]>(
+          "/api/routines/recommended?context=dashboard&limit=4",
+        );
+        setRecommendedRoutines(data);
+      } catch (err) {
+        setError(
+          err instanceof Error
+            ? err.message
+            : "Failed to load recommended routines",
+        );
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchRecommendedRoutines();
+  }, []);
+
+  const toggleSave = async (routine: Routine) => {
+    try {
+      const updated = routine.isSaved
+        ? await apiDelete<Routine>(`/api/routines/${routine._id}/save`)
+        : await apiPost<Routine>(`/api/routines/${routine._id}/save`);
+
+      setRecommendedRoutines((prev) =>
+        prev.map((item) => (item._id === updated._id ? updated : item)),
+      );
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Failed to update save state",
+      );
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar />
 
-      <div className="max-w-7xl mx-auto px-6 py-10">
-        {/* Greeting */}
-        <div className="mb-10">
-          <h1 className="text-6xl font-bold mb-2">
-            Hi {form.username || "Athlete"}!
+      <main className="mx-auto max-w-7xl px-6 py-10">
+        <section className="mb-10">
+          <h1 className="text-5xl font-bold md:text-6xl">
+            Hi {username || "Athlete"}!
           </h1>
-          <p className="text-xl text-gray-600">What we doing today?</p>
-        </div>
+          <p className="mt-2 text-lg text-gray-600">
+            Welcome back to Athletica.
+          </p>
+        </section>
 
-        {/* Main Grid */}
-        <div className="grid grid-cols-3 gap-8">
-          {/* Left Column */}
-          <div className="space-y-8">
-            {/* Activity */}
-            <div className="bg-white rounded-2xl shadow p-6">
-              <h2 className="text-lg font-semibold mb-4">Activity Report</h2>
-
-              <div className="h-40 flex items-center justify-center text-gray-400">
-                Calendar Placeholder
+        <section className="mb-12 rounded-3xl bg-white p-6 shadow-sm">
+          <div className="mb-6 flex items-start justify-between gap-4">
+            <div>
+              <div className="mb-2 flex items-center gap-2 text-sm font-medium text-gray-500">
+                <TrendingUp size={16} />
+                <span>Recommended routines</span>
               </div>
+              <h2 className="text-2xl font-bold md:text-3xl">
+                Popular right now
+              </h2>
+              <p className="mt-2 text-sm text-gray-600">
+                A few public routines that are currently performing well.
+              </p>
             </div>
 
-            {/* Stats */}
-            <div className="bg-white rounded-2xl shadow p-6">
-              <h2 className="text-lg font-semibold mb-4">My Stats</h2>
-
-              <div className="space-y-2 text-gray-700">
-                <p>Bodyweight</p>
-                <p>Height</p>
-                <p>BMI</p>
-                <p>Calorie Maintenance</p>
-                <p>Body Fat %</p>
-                <p>Age</p>
-                <p>Calorie Goal</p>
-              </div>
-            </div>
+            <Link
+              to="/routines"
+              className="text-sm font-medium text-black underline-offset-4 hover:underline"
+            >
+              View routines
+            </Link>
           </div>
 
-          {/* Middle Column */}
-          <div className="col-span-2 space-y-8">
-            {/* Today's Workout */}
-            <div className="bg-white rounded-2xl shadow p-6">
-              <div className="flex justify-between items-start mb-4">
-                <div>
-                  <h2 className="text-lg font-semibold">Today’s Workout</h2>
+          {loading ? (
+            <p className="text-sm text-gray-600">Loading recommendations...</p>
+          ) : error ? (
+            <p className="text-sm text-red-600">{error}</p>
+          ) : recommendedRoutines.length === 0 ? (
+            <p className="text-sm text-gray-600">
+              No recommended routines available yet.
+            </p>
+          ) : (
+            <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
+              {recommendedRoutines.map((routine) => (
+                <div
+                  key={routine._id}
+                  className="overflow-hidden rounded-2xl border border-black/10 bg-white shadow-sm"
+                >
+                  <div className="h-44 w-full overflow-hidden bg-gray-100">
+                    {routine.image ? (
+                      <img
+                        src={routine.image}
+                        alt={routine.title}
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <div className="flex h-full items-center justify-center text-sm text-gray-500">
+                        No cover image
+                      </div>
+                    )}
+                  </div>
 
-                  <p className="font-medium mt-2">Upper Body Workout</p>
+                  <div className="space-y-4 p-5">
+                    <div>
+                      <h3 className="text-xl font-semibold leading-tight">
+                        {routine.title}
+                      </h3>
+                      <p className="mt-1 text-sm text-gray-500">
+                        by{" "}
+                        {routine.createdBy?.name || routine.createdBy?.username}
+                      </p>
+                    </div>
 
-                  <p className="text-sm text-gray-500">By: James Ponds</p>
+                    <p className="line-clamp-2 text-sm text-gray-600">
+                      {routine.description}
+                    </p>
+
+                    <div className="flex flex-wrap gap-2">
+                      <span className="rounded-full bg-black/5 px-3 py-1 text-xs font-medium">
+                        {routine.difficulty}
+                      </span>
+                      <span className="rounded-full bg-black/5 px-3 py-1 text-xs font-medium">
+                        {routine.durationMinutes} min
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                      <Link
+                        to={`/routines/${routine._id}`}
+                        className="rounded-xl bg-black px-4 py-2 text-sm font-medium text-white transition hover:opacity-90"
+                      >
+                        View
+                      </Link>
+
+                      <button
+                        onClick={() => toggleSave(routine)}
+                        className="rounded-xl border border-black/10 px-4 py-2 text-sm font-medium transition hover:bg-black/5"
+                      >
+                        {routine.isSaved ? "Saved" : "Save"}
+                      </button>
+                    </div>
+
+                    <div className="flex items-center gap-2 text-sm text-gray-500">
+                      <Star size={15} fill="currentColor" />
+                      <span>{routine.savedByCount || 0} saves</span>
+                    </div>
+                  </div>
                 </div>
-
-                <button className="border p-2 rounded-lg">☆</button>
-              </div>
-
-              <div className="space-y-2 text-gray-700 mb-6">
-                <div className="flex justify-between">
-                  <span>Incline Dumbbell Press</span>
-                  <span>3x6</span>
-                </div>
-
-                <div className="flex justify-between">
-                  <span>Cable Chest Press</span>
-                  <span>3x10</span>
-                </div>
-
-                <div className="flex justify-between">
-                  <span>Cable Lat Pulldown</span>
-                  <span>3x6</span>
-                </div>
-
-                <div className="flex justify-between">
-                  <span>Dumbbell Lateral Raises</span>
-                  <span>3x12</span>
-                </div>
-
-                <div className="flex justify-between">
-                  <span>Cable Rows</span>
-                  <span>3x10</span>
-                </div>
-              </div>
-
-              <button className="bg-black text-white px-6 py-2 rounded-lg">
-                Start Workout
-              </button>
+              ))}
             </div>
+          )}
+        </section>
 
-            {/* Progression */}
-            <div className="bg-white rounded-2xl shadow p-6">
-              <h2 className="text-lg font-semibold mb-4">Progression</h2>
+        <section>
+          <h2 className="mb-6 text-2xl font-bold">Quick Actions</h2>
 
-              <div className="space-y-2 text-gray-700">
-                <div className="flex justify-between">
-                  <span>Incline Dumbbell Press</span>
-                  <span>25kg → 28kg</span>
-                </div>
-
-                <div className="flex justify-between">
-                  <span>Lat Pulldown</span>
-                  <span>90kg → 95kg</span>
-                </div>
-
-                <div className="flex justify-between">
-                  <span>Dumbbell Press</span>
-                  <span>30kg → 32kg</span>
-                </div>
-
-                <div className="flex justify-between">
-                  <span>Leg Press</span>
-                  <span>190kg → 210kg</span>
-                </div>
-
-                <div className="flex justify-between">
-                  <span>Squat</span>
-                  <span>90kg → 100kg</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Quick Actions */}
-        <div className="mt-12">
-          <h2 className="text-lg font-semibold mb-6 text-center">
-            Quick Actions
-          </h2>
-
-          <div className="grid grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
             <Link to="/routines/create">
-              <div className="bg-white rounded-2xl shadow p-6 cursor-pointer hover:shadow-md transition">
-                <div className="h-24 bg-gray-100 rounded mb-4"></div>
-                <h3 className="font-semibold">Create Plan</h3>
-                <p className="text-sm text-gray-500">
-                  Start a brand new workout plan
+              <div className="rounded-2xl bg-white p-6 shadow-sm transition hover:shadow-md">
+                <div className="mb-4 h-24 rounded-xl bg-gray-100"></div>
+                <h3 className="font-semibold">Create Routine</h3>
+                <p className="mt-1 text-sm text-gray-500">
+                  Build a new workout routine.
+                </p>
+              </div>
+            </Link>
+
+            <Link to="/routines/my-routines">
+              <div className="rounded-2xl bg-white p-6 shadow-sm transition hover:shadow-md">
+                <div className="mb-4 h-24 rounded-xl bg-gray-100"></div>
+                <h3 className="font-semibold">My Routines</h3>
+                <p className="mt-1 text-sm text-gray-500">
+                  Manage the routines you have created.
                 </p>
               </div>
             </Link>
 
             <Link to="/routines/saved">
-              <div className="bg-white rounded-2xl shadow p-6 cursor-pointer hover:shadow-md transition">
-                <div className="h-24 bg-gray-100 rounded mb-4"></div>
-                <h3 className="font-semibold">View Saved Plans</h3>
-                <p className="text-sm text-gray-500">
-                  Continue your saved routines
-                </p>
-              </div>
-            </Link>
-
-            <Link to="/discover">
-              <div className="bg-white rounded-2xl shadow p-6 cursor-pointer hover:shadow-md transition">
-                <div className="h-24 bg-gray-100 rounded mb-4"></div>
-                <h3 className="font-semibold">Discover Plans</h3>
-                <p className="text-sm text-gray-500">
-                  Explore community workouts
+              <div className="rounded-2xl bg-white p-6 shadow-sm transition hover:shadow-md">
+                <div className="mb-4 h-24 rounded-xl bg-gray-100"></div>
+                <h3 className="font-semibold">Saved Routines</h3>
+                <p className="mt-1 text-sm text-gray-500">
+                  Go back to routines you have saved.
                 </p>
               </div>
             </Link>
           </div>
-        </div>
-      </div>
+        </section>
+      </main>
 
       <Footer />
     </div>
