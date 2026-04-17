@@ -89,6 +89,13 @@ const userSchema = new mongoose.Schema(
       type: notificationPreferencesSchema,
       default: () => ({}),
     },
+
+    pinnedRoutines: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Routine",
+      },
+    ],
   },
   { timestamps: true, collection: "Users" },
 );
