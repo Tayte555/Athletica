@@ -9,6 +9,7 @@ export default function Settings() {
     avatarUrl: "",
     username: "",
     name: "",
+    isAdmin: false,
   });
 
   useEffect(() => {
@@ -29,6 +30,7 @@ export default function Settings() {
             : "",
           name: data.name || "",
           username: data.username || "",
+          isAdmin: Boolean(data.isAdmin),
         });
       } catch (err) {
         console.error("Failed to fetch profile:", err);
@@ -41,12 +43,11 @@ export default function Settings() {
   return (
     <div>
       <Navbar />
-      <div className="max-w-6xl mx-auto py-10 flex gap-12">
-        {/* Sidebar Navigation */}
+      <div className="mx-auto flex max-w-6xl gap-12 py-10">
         <div className="w-64 border-r pr-6">
-          <h2 className="text-3xl font-bold mb-6">Settings</h2>
+          <h2 className="mb-6 text-3xl font-bold">Settings</h2>
 
-          <div className="flex gap-3 mb-2">
+          <div className="mb-2 flex gap-3">
             <img
               src={
                 form.avatar
@@ -55,7 +56,7 @@ export default function Settings() {
                     ? form.avatarUrl
                     : "/assets/default-avatar.jpg"
               }
-              className="rounded-full w-14 h-14 object-cover mb-4"
+              className="mb-4 h-14 w-14 rounded-full object-cover"
             />
             <div className="mt-1">
               <p className="text-md font-bold">{form.name}</p>
@@ -67,7 +68,7 @@ export default function Settings() {
             <NavLink
               to="profile"
               className={({ isActive }) =>
-                `px-3 py-2 rounded-md transition ${
+                `rounded-md px-3 py-2 transition ${
                   isActive ? "bg-gray-300 text-black" : "hover:bg-gray-100"
                 }`
               }
@@ -78,7 +79,7 @@ export default function Settings() {
             <NavLink
               to="account"
               className={({ isActive }) =>
-                `px-3 py-2 rounded-md transition ${
+                `rounded-md px-3 py-2 transition ${
                   isActive ? "bg-gray-300 text-black" : "hover:bg-gray-100"
                 }`
               }
@@ -89,7 +90,7 @@ export default function Settings() {
             <NavLink
               to="security"
               className={({ isActive }) =>
-                `px-3 py-2 rounded-md transition ${
+                `rounded-md px-3 py-2 transition ${
                   isActive ? "bg-gray-300 text-black" : "hover:bg-gray-100"
                 }`
               }
@@ -100,17 +101,29 @@ export default function Settings() {
             <NavLink
               to="notifications"
               className={({ isActive }) =>
-                `px-3 py-2 rounded-md transition ${
+                `rounded-md px-3 py-2 transition ${
                   isActive ? "bg-gray-300 text-black" : "hover:bg-gray-100"
                 }`
               }
             >
               Notifications
             </NavLink>
+
+            {form.isAdmin && (
+              <NavLink
+                to="admin"
+                className={({ isActive }) =>
+                  `rounded-md px-3 py-2 transition ${
+                    isActive ? "bg-gray-300 text-black" : "hover:bg-gray-100"
+                  }`
+                }
+              >
+                Admin
+              </NavLink>
+            )}
           </nav>
         </div>
 
-        {/* Selected Settings Component Renders Here */}
         <div className="flex-1">
           <Outlet />
         </div>

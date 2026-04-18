@@ -32,7 +32,6 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
-
     avatar: {
       type: String,
       default: "",
@@ -61,10 +60,26 @@ const userSchema = new mongoose.Schema(
       type: Map,
       of: String,
     },
-
     isPrivate: {
       type: Boolean,
       default: false,
+    },
+    isAdmin: {
+      type: Boolean,
+      default: false,
+    },
+    isSuspended: {
+      type: Boolean,
+      default: false,
+    },
+    suspendedAt: {
+      type: Date,
+      default: null,
+    },
+    suspensionReason: {
+      type: String,
+      default: "",
+      trim: true,
     },
     followers: [
       {
@@ -84,12 +99,10 @@ const userSchema = new mongoose.Schema(
         ref: "User",
       },
     ],
-
     notificationPreferences: {
       type: notificationPreferencesSchema,
       default: () => ({}),
     },
-
     pinnedRoutines: [
       {
         type: mongoose.Schema.Types.ObjectId,

@@ -129,6 +129,23 @@ const routineSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
+    isHidden: {
+      type: Boolean,
+      default: false,
+    },
+    isFlagged: {
+      type: Boolean,
+      default: false,
+    },
+    moderationNote: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+    lastModeratedAt: {
+      type: Date,
+      default: null,
+    },
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",

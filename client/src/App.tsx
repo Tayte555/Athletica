@@ -17,6 +17,7 @@ import RoutineList from "./pages/routines/lists/RoutinePage";
 import MyRoutines from "./pages/routines/lists/RoutineMyPage";
 import RoutineDetails from "./pages/routines/RoutineDetailsPage";
 import SavedRoutines from "./pages/routines/lists/RoutineSavedPage";
+import AdminSettings from "./pages/settings/subpages/AdminSettings";
 
 export default function App() {
   return (
@@ -93,6 +94,7 @@ export default function App() {
         <Route path="account" element={<AccountSettings />} />
         <Route path="security" element={<SecuritySettings />} />
         <Route path="notifications" element={<NotificationSettings />} />
+        <Route path="admin" element={<AdminSettings />} />
       </Route>
     </Routes>
   );

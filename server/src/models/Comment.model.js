@@ -16,6 +16,23 @@ const commentSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    isHidden: {
+      type: Boolean,
+      default: false,
+    },
+    isFlagged: {
+      type: Boolean,
+      default: false,
+    },
+    moderationNote: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+    lastModeratedAt: {
+      type: Date,
+      default: null,
+    },
   },
   { timestamps: true },
 );

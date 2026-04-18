@@ -531,6 +531,7 @@ router.get("/search", async (req, res) => {
 
     const query = {
       isPublic: true,
+      isHidden: false,
     };
 
     if (q.trim()) {
@@ -721,7 +722,10 @@ router.post("/:id/like", protect, async (req, res) => {
 
 router.get("/:id/comments", async (req, res) => {
   try {
-    const comments = await Comment.find({ routine: req.params.id })
+    const comments = await Comment.find({
+      routine: req.params.id,
+      isHidden: false,
+    })
       .populate("user", "username name avatar")
       .sort({ createdAt: -1 });
 
@@ -781,7 +785,7 @@ router.post("/:id/comments", protect, async (req, res) => {
 
 router.get("/public", protect, async (req, res) => {
   try {
-    const routines = await Routine.find({ isPublic: true })
+    const routines = await Routine.find({ isPublic: true, isHidden: false })
       .populate("createdBy", "username name avatar")
       .populate("exercises.exercise")
       .sort({ createdAt: -1 });
@@ -831,6 +835,23 @@ router.get("/:id", async (req, res) => {
 
     if (!routine) {
       return res.status(404).json({ message: "Routine not found" });
+    }
+
+    if (routine.isHidden) {
+      const viewer = currentUserId
+        ? await User.findById(currentUserId).select("isAdmin")
+        : null;
+
+      const isOwner =
+        currentUserId &&
+        String(routine.createdBy?._id || routine.createdBy) ===
+          String(currentUserId);
+
+      const isAdmin = Boolean(viewer?.isAdmin);
+
+      if (!isOwner && !isAdmin) {
+        return res.status(404).json({ message: "Routine not found" });
+      }
     }
 
     const isOwner =
