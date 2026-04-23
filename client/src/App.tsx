@@ -18,6 +18,7 @@ import MyRoutines from "./pages/routines/lists/RoutineMyPage";
 import RoutineDetails from "./pages/routines/RoutineDetailsPage";
 import SavedRoutines from "./pages/routines/lists/RoutineSavedPage";
 import AdminSettings from "./pages/settings/subpages/AdminSettings";
+import AboutPage from "./pages/about/AboutPage";
 
 export default function App() {
   return (
@@ -29,6 +30,7 @@ export default function App() {
       <Route path="/:username" element={<Profile />} />
       <Route path="/discover" element={<Discover />} />
       <Route path="/routines/:id" element={<RoutineDetails />} />
+      <Route path="/about" element={<AboutPage />} />
 
       {/**PRIVATE General Routes */}
       <Route

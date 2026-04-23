@@ -13,7 +13,6 @@ import {
   Bookmark,
   Clock3,
 } from "lucide-react";
-import discoverBanner from "../../assets/forest run.jpeg";
 
 type DiscoverResponse = {
   items: Routine[];
@@ -206,7 +205,7 @@ export default function DiscoverPage() {
           <div
             className="h-[280px] w-full bg-cover bg-center md:h-[340px]"
             style={{
-              backgroundImage: `url(${discoverBanner})`,
+              backgroundImage: `url(/assets/forest-run.jpeg)`,
             }}
           >
             <div className="flex h-full w-full items-end bg-gradient-to-t from-black/75 via-black/35 to-transparent p-6 md:p-8">
