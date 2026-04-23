@@ -58,7 +58,7 @@ export default function ShareRoutineButton({
         className="mt-4 inline-flex items-center gap-1 rounded-xl border border-black/10 px-3 py-3 text-sm font-medium text-gray-700 transition hover:bg-gray-100 disabled:opacity-60"
       >
         <Share2 size={16} />
-        {sharing ? "Sharing..." : "Share"}
+        Share
       </button>
 
       <button

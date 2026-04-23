@@ -1,3 +1,4 @@
+import { Edit2Icon } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 
 export default function ProfileSettings() {
@@ -104,7 +105,7 @@ export default function ProfileSettings() {
             onClick={openFilePicker}
             className="absolute bottom-0 right-0 bg-white border rounded-md p-2 shadow hover:bg-gray-100"
           >
-            ✏️
+            <Edit2Icon size={16} />
           </button>
         </div>
 

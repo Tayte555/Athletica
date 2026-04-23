@@ -6,6 +6,13 @@ import ExercisePickerModal from "../../components/routines/ExercisePickerModal";
 import { apiPost } from "../../lib/routineApi";
 import type { Exercise, Routine } from "../../types/routine";
 import { Plus, Trash2, GripVertical } from "lucide-react";
+import MultiSelectChips from "../../components/UI/MultiSelectChips";
+import {
+  ROUTINE_FOCUS_OPTIONS,
+  ROUTINE_WORKOUT_TYPE_OPTIONS,
+  TARGET_MUSCLE_OPTIONS,
+  EQUIPMENT_OPTIONS,
+} from "../../constants/routineOptions";
 
 type SelectedRoutineExercise = {
   exercise?: Exercise | null;
@@ -37,8 +44,8 @@ export default function RoutineCreatePage() {
     durationMinutes: 45,
     focus: "",
     workoutType: "",
-    targetMuscles: "",
-    equipment: "",
+    targetMuscles: [] as string[],
+    equipment: [] as string[],
     tags: "",
     notes: "",
     image: "",
@@ -114,6 +121,12 @@ export default function RoutineCreatePage() {
 
       const payload = {
         ...form,
+        targetMuscles: form.targetMuscles,
+        equipment: form.equipment,
+        tags: form.tags
+          .split(",")
+          .map((tag) => tag.trim())
+          .filter(Boolean),
         exercises: exercises.map((item, index) => ({
           exercise: item.exercise?._id || null,
           customExercise: item.customExercise || null,
@@ -190,44 +203,57 @@ export default function RoutineCreatePage() {
                 className="h-11 rounded-xl border border-black/10 px-4 text-sm outline-none"
               />
 
-              <input
+              <select
                 value={form.focus}
                 onChange={(e) =>
                   setForm((prev) => ({ ...prev, focus: e.target.value }))
                 }
-                placeholder="Focus"
                 className="h-11 rounded-xl border border-black/10 px-4 text-sm outline-none"
-              />
+              >
+                <option value="">Select focus</option>
+                {ROUTINE_FOCUS_OPTIONS.map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </select>
 
-              <input
+              <select
                 value={form.workoutType}
                 onChange={(e) =>
                   setForm((prev) => ({ ...prev, workoutType: e.target.value }))
                 }
-                placeholder="Workout type"
                 className="h-11 rounded-xl border border-black/10 px-4 text-sm outline-none"
-              />
+              >
+                <option value="">Select workout type</option>
+                {ROUTINE_WORKOUT_TYPE_OPTIONS.map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </select>
 
-              <input
-                value={form.targetMuscles}
-                onChange={(e) =>
-                  setForm((prev) => ({
-                    ...prev,
-                    targetMuscles: e.target.value,
-                  }))
-                }
-                placeholder="Target muscles (comma separated)"
-                className="h-11 rounded-xl border border-black/10 px-4 text-sm outline-none"
-              />
+              <div className="md:col-span-2">
+                <MultiSelectChips
+                  label="Target muscles"
+                  options={TARGET_MUSCLE_OPTIONS}
+                  values={form.targetMuscles}
+                  onChange={(values) =>
+                    setForm((prev) => ({ ...prev, targetMuscles: values }))
+                  }
+                />
+              </div>
 
-              <input
-                value={form.equipment}
-                onChange={(e) =>
-                  setForm((prev) => ({ ...prev, equipment: e.target.value }))
-                }
-                placeholder="Equipment (comma separated)"
-                className="h-11 rounded-xl border border-black/10 px-4 text-sm outline-none"
-              />
+              <div className="md:col-span-2">
+                <MultiSelectChips
+                  label="Equipment needed"
+                  options={EQUIPMENT_OPTIONS}
+                  values={form.equipment}
+                  onChange={(values) =>
+                    setForm((prev) => ({ ...prev, equipment: values }))
+                  }
+                />
+              </div>
 
               <input
                 value={form.tags}
@@ -290,7 +316,7 @@ export default function RoutineCreatePage() {
                 disabled={saving}
                 className="mt-3 inline-flex w-full items-center justify-center rounded-xl border border-black/10 px-4 py-3 text-sm font-medium transition hover:bg-black/5 disabled:opacity-60"
               >
-                {saving ? "Saving..." : "Save Routine"}
+                {saving ? "Saving..." : "Create Routine"}
               </button>
 
               {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
