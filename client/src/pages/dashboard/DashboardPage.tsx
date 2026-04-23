@@ -124,7 +124,7 @@ export default function DashboardPage() {
                   <div className="h-44 w-full overflow-hidden bg-gray-100">
                     {routine.image ? (
                       <img
-                        src={routine.image}
+                        src={`http://localhost:5555${routine.image}`}
                         alt={routine.title}
                         className="h-full w-full object-cover"
                       />

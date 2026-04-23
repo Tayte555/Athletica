@@ -460,7 +460,7 @@ export default function DiscoverPage() {
                   <div className="h-24 w-full overflow-hidden rounded-lg bg-gray-200 md:w-24">
                     {routine.image ? (
                       <img
-                        src={routine.image}
+                        src={`http://localhost:5555${routine.image}`}
                         alt={routine.title}
                         className="h-full w-full object-cover"
                       />

@@ -243,7 +243,7 @@ export default function RoutineDetailsPage() {
             {routine.image ? (
               <div className="overflow-hidden rounded-[28px] border border-black/10 bg-white">
                 <img
-                  src={routine.image}
+                  src={`http://localhost:5555${routine.image}`}
                   alt={routine.title}
                   className="h-[260px] w-full object-cover"
                 />

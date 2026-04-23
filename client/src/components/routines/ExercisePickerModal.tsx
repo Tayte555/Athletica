@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 import { X, Dumbbell } from "lucide-react";
 import { apiGet } from "../../lib/routineApi";
 import type { Exercise, CustomExercise } from "../../types/routine";
+import MultiSelectChips from "../../components/UI/MultiSelectChips";
+import { EQUIPMENT_OPTIONS } from "../../constants/routineOptions";
 
 type SelectedRoutineExercise = {
   exercise?: Exercise | null;
@@ -22,7 +24,7 @@ type Props = {
 const blankCustomExercise = {
   name: "",
   muscleGroup: "",
-  equipment: "",
+  equipment: [] as string[],
   description: "",
   image: "",
   instructions: "",
@@ -97,10 +99,7 @@ export default function ExercisePickerModal({
       customExercise: {
         name: customExercise.name.trim(),
         muscleGroup: customExercise.muscleGroup.trim(),
-        equipment: customExercise.equipment
-          .split(",")
-          .map((item) => item.trim())
-          .filter(Boolean),
+        equipment: customExercise.equipment,
         description: customExercise.description.trim(),
         image: customExercise.image.trim(),
         instructions: customExercise.instructions
@@ -211,7 +210,7 @@ export default function ExercisePickerModal({
             )}
           </div>
 
-          <div className="p-6">
+          <div className="p-6 max-h-[70vh] overflow-y-auto">
             <h3 className="text-lg font-bold">Create Custom Exercise</h3>
             <p className="mt-1 text-sm text-[#666]">
               This will only be stored inside the current routine.
@@ -242,29 +241,19 @@ export default function ExercisePickerModal({
                 className="h-11 w-full rounded-xl border border-black/10 px-4 text-sm outline-none focus:border-black/20"
               />
 
-              <input
-                value={customExercise.equipment}
-                onChange={(e) =>
-                  setCustomExercise((prev) => ({
-                    ...prev,
-                    equipment: e.target.value,
-                  }))
-                }
-                placeholder="Equipment (comma separated)"
-                className="h-11 w-full rounded-xl border border-black/10 px-4 text-sm outline-none focus:border-black/20"
-              />
-
-              <input
-                value={customExercise.image}
-                onChange={(e) =>
-                  setCustomExercise((prev) => ({
-                    ...prev,
-                    image: e.target.value,
-                  }))
-                }
-                placeholder="Image URL (optional)"
-                className="h-11 w-full rounded-xl border border-black/10 px-4 text-sm outline-none focus:border-black/20"
-              />
+              <div className="md:col-span-2">
+                <MultiSelectChips
+                  label="Equipment needed"
+                  options={EQUIPMENT_OPTIONS}
+                  values={customExercise.equipment}
+                  onChange={(values) =>
+                    setCustomExercise((prev) => ({
+                      ...prev,
+                      equipment: values,
+                    }))
+                  }
+                />
+              </div>
 
               <textarea
                 value={customExercise.description}

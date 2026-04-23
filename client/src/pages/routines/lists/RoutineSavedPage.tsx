@@ -103,7 +103,7 @@ export default function RoutineSavedPage() {
                 <div className="h-[180px] overflow-hidden rounded-2xl bg-[#ececec] md:h-[140px]">
                   {routine.image ? (
                     <img
-                      src={routine.image}
+                      src={`http://localhost:5555${routine.image}`}
                       alt={routine.title}
                       className="h-full w-full object-cover"
                     />

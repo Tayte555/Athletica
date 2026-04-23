@@ -114,7 +114,7 @@ export default function RoutineMyPage() {
                 <div className="h-[150px] overflow-hidden rounded-2xl bg-[#ececec]">
                   {routine.image ? (
                     <img
-                      src={routine.image}
+                      src={`http://localhost:5555${routine.image}`}
                       alt={routine.title}
                       className="h-full w-full object-cover"
                     />

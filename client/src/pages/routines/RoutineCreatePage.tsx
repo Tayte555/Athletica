@@ -13,6 +13,7 @@ import {
   TARGET_MUSCLE_OPTIONS,
   EQUIPMENT_OPTIONS,
 } from "../../constants/routineOptions";
+import { uploadImage } from "../../lib/uploadApi";
 
 type SelectedRoutineExercise = {
   exercise?: Exercise | null;
@@ -36,6 +37,7 @@ export default function RoutineCreatePage() {
   const [showPicker, setShowPicker] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [coverUploading, setCoverUploading] = useState(false);
 
   const [form, setForm] = useState({
     title: "",
@@ -99,6 +101,25 @@ export default function RoutineCreatePage() {
         order: i + 1,
       }));
     });
+  };
+
+  const handleCoverImageChange = async (
+    e: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      setCoverUploading(true);
+      setError("");
+
+      const imageUrl = await uploadImage("/api/routines/upload-cover", file);
+      setForm((prev) => ({ ...prev, image: imageUrl }));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to upload image");
+    } finally {
+      setCoverUploading(false);
+    }
   };
 
   const totalExercises = useMemo(() => exercises.length, [exercises]);
@@ -254,25 +275,15 @@ export default function RoutineCreatePage() {
                   }
                 />
               </div>
-
-              <input
-                value={form.tags}
-                onChange={(e) =>
-                  setForm((prev) => ({ ...prev, tags: e.target.value }))
-                }
-                placeholder="Tags (comma separated)"
-                className="h-11 rounded-xl border border-black/10 px-4 text-sm outline-none"
-              />
-
-              <input
-                value={form.image}
-                onChange={(e) =>
-                  setForm((prev) => ({ ...prev, image: e.target.value }))
-                }
-                placeholder="Cover image URL"
-                className="h-11 rounded-xl border border-black/10 px-4 text-sm outline-none"
-              />
             </div>
+            <input
+              value={form.tags}
+              onChange={(e) =>
+                setForm((prev) => ({ ...prev, tags: e.target.value }))
+              }
+              placeholder="Tags (comma separated)"
+              className="h-11 w-full rounded-xl border border-black/10 px-4 text-sm outline-none"
+            />
 
             <textarea
               value={form.notes}
@@ -283,6 +294,40 @@ export default function RoutineCreatePage() {
               placeholder="Routine notes"
               className="w-full rounded-2xl border border-black/10 px-4 py-3 text-sm outline-none focus:border-black/20"
             />
+
+            <div className="space-y-3 rounded-2xl border border-black/10 p-4">
+              <div>
+                <p className="text-sm font-medium text-gray-700">
+                  Routine cover image
+                </p>
+                <p className="mt-1 text-xs text-[#666]">
+                  Upload a cover image for your routine.
+                </p>
+              </div>
+
+              {form.image ? (
+                <img
+                  src={`http://localhost:5555${form.image}`}
+                  alt="Routine cover preview"
+                  className="h-48 w-full rounded-2xl object-cover"
+                />
+              ) : (
+                <div className="flex h-48 items-center justify-center rounded-2xl bg-black/5 text-sm text-[#777]">
+                  No cover image uploaded
+                </div>
+              )}
+
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleCoverImageChange}
+                className="block w-full text-sm"
+              />
+
+              {coverUploading && (
+                <p className="text-sm text-[#666]">Uploading cover image...</p>
+              )}
+            </div>
 
             <label className="inline-flex items-center gap-3 text-sm font-medium">
               <input

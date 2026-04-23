@@ -10,8 +10,31 @@ import {
   createNotification,
   createNotificationsForFollowers,
 } from "../utils/notification.utils.js";
+import fs from "fs";
+import path from "path";
+import multer from "multer";
 
 const router = express.Router();
+
+const routineCoverStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const uploadPath = path.join(process.cwd(), "server/uploads/routines");
+    fs.mkdirSync(uploadPath, { recursive: true });
+    cb(null, uploadPath);
+  },
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname);
+    cb(null, `routine-${req.userId}-${Date.now()}${ext}`);
+  },
+});
+
+const routineCoverUpload = multer({
+  storage: routineCoverStorage,
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype.startsWith("image/")) cb(null, true);
+    else cb(new Error("Only images allowed"));
+  },
+});
 
 function parseCsvOrArray(value) {
   if (Array.isArray(value))
@@ -247,6 +270,26 @@ function calculateSimilarityScore(baseRoutine, candidateRoutine) {
 
   return score;
 }
+
+router.post(
+  "/upload-cover",
+  protect,
+  routineCoverUpload.single("image"),
+  async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: "No image uploaded" });
+      }
+
+      res.json({
+        imageUrl: `/uploads/routines/${req.file.filename}`,
+      });
+    } catch (error) {
+      console.error("Error uploading routine cover:", error);
+      res.status(500).json({ message: "Server error" });
+    }
+  },
+);
 
 router.post("/:id/optimise", protect, async (req, res) => {
   try {
