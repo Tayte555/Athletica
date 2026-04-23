@@ -565,7 +565,7 @@ router.get("/search", async (req, res) => {
       maxDuration,
       sort = "recent",
       page = 1,
-      limit = 10,
+      limit = 12,
     } = req.query;
 
     const parsedPage = Math.max(parseInt(page, 10) || 1, 1);
