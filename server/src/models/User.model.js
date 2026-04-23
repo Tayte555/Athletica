@@ -59,6 +59,7 @@ const userSchema = new mongoose.Schema(
     socialLinks: {
       type: Map,
       of: String,
+      default: {},
     },
     isPrivate: {
       type: Boolean,

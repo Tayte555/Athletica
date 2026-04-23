@@ -9,6 +9,7 @@ export default function ProfileSettings() {
     bio: "",
     location: "",
     pronouns: "",
+    customPronouns: "",
     link: "",
     isPrivate: false,
   });
@@ -24,7 +25,18 @@ export default function ProfileSettings() {
         const res = await fetch("/api/user/me", {
           headers: { Authorization: `Bearer ${token}` },
         });
+
         const data = await res.json();
+
+        const savedPronouns = data.pronouns || "";
+        const presetPronouns = [
+          "",
+          "He/Him",
+          "She/Her",
+          "They/Them",
+          "He/They",
+          "She/They",
+        ];
 
         setForm({
           avatar: null,
@@ -32,7 +44,12 @@ export default function ProfileSettings() {
           name: data.name || "",
           bio: data.bio || "",
           location: data.location || "",
-          pronouns: data.pronouns || "",
+          pronouns: presetPronouns.includes(savedPronouns)
+            ? savedPronouns
+            : "Custom",
+          customPronouns: presetPronouns.includes(savedPronouns)
+            ? ""
+            : savedPronouns,
           link: data.link || "",
           isPrivate: Boolean(data.isPrivate),
         });
@@ -52,11 +69,14 @@ export default function ProfileSettings() {
     const token = localStorage.getItem("token");
     if (!token) return;
 
+    const finalPronouns =
+      form.pronouns === "Custom" ? form.customPronouns : form.pronouns;
+
     const formData = new FormData();
     formData.append("name", form.name);
     formData.append("bio", form.bio);
     formData.append("location", form.location);
-    formData.append("pronouns", form.pronouns);
+    formData.append("pronouns", finalPronouns);
     formData.append("link", form.link);
     formData.append("isPrivate", String(form.isPrivate));
 
@@ -74,6 +94,12 @@ export default function ProfileSettings() {
       });
 
       const data = await res.json();
+
+      if (!res.ok) {
+        alert(data.message || "Failed to update profile");
+        return;
+      }
+
       console.log("Profile updated:", data);
       alert("Profile updated successfully");
     } catch (err) {
@@ -98,6 +124,7 @@ export default function ProfileSettings() {
                   : "/assets/default-avatar.jpg"
             }
             className="w-36 h-36 rounded-full object-cover"
+            alt="Profile avatar"
           />
 
           <button
@@ -125,53 +152,82 @@ export default function ProfileSettings() {
         />
       </div>
 
-      <div className="mt-4">
+      <div className="mt-5">
         <label className="text-sm font-bold mb-1 block">Name</label>
         <input
           type="text"
           value={form.name}
           onChange={(e) => setForm({ ...form, name: e.target.value })}
-          className="w-full py-1 border-b border-gray-300 focus:outline-none"
+          className="w-full py-1 border-b border-gray-300 focus:outline-none bg-transparent"
         />
       </div>
 
-      <div className="mt-2">
+      <div className="mt-5">
         <label className="text-sm font-bold mb-1 block">Bio</label>
-        <input
-          type="text"
+        <textarea
           value={form.bio}
           onChange={(e) => setForm({ ...form, bio: e.target.value })}
-          className="w-full py-1 border-b border-gray-300 focus:outline-none"
+          rows={4}
+          maxLength={300}
+          placeholder="Tell people about yourself..."
+          className="w-full py-1 border-b border-gray-300 focus:outline-none resize-none bg-transparent"
         />
+        <p className="mt-1 text-xs text-gray-500">{form.bio.length}/300</p>
       </div>
 
-      <div className="mt-2">
+      <div className="mt-5">
         <label className="text-sm font-bold mb-1 block">Location</label>
         <input
           type="text"
           value={form.location}
+          list="location-options"
+          placeholder="Start typing your city..."
           onChange={(e) => setForm({ ...form, location: e.target.value })}
-          className="w-full py-1 border-b border-gray-300 focus:outline-none"
+          className="w-full py-1 border-b border-gray-300 focus:outline-none bg-transparent"
         />
+
+        <datalist id="location-options">
+          <option value="Birmingham, UK" />
+          <option value="London, UK" />
+          <option value="Manchester, UK" />
+          <option value="Leeds, UK" />
+          <option value="Liverpool, UK" />
+          <option value="Nottingham, UK" />
+          <option value="Coventry, UK" />
+        </datalist>
       </div>
 
-      <div className="mt-2">
+      <div className="mt-5">
         <label className="text-sm font-bold mb-1 block">Pronouns</label>
-        <input
-          type="text"
+        <select
           value={form.pronouns}
-          onChange={(e) => setForm({ ...form, pronouns: e.target.value })}
-          className="w-full py-1 border-b border-gray-300 focus:outline-none"
-        />
+          onChange={(e) =>
+            setForm({
+              ...form,
+              pronouns: e.target.value,
+              customPronouns:
+                e.target.value === "Custom" ? form.customPronouns : "",
+            })
+          }
+          className="w-full py-1 border-b border-gray-300 focus:outline-none bg-transparent"
+        >
+          <option value="">Prefer not to say</option>
+          <option value="He/Him">He/Him</option>
+          <option value="She/Her">She/Her</option>
+          <option value="They/Them">They/Them</option>
+          <option value="He/They">He/They</option>
+          <option value="She/They">She/They</option>
+        </select>
       </div>
 
-      <div className="mt-2">
+      <div className="mt-5">
         <label className="text-sm font-bold mb-1 block">Link</label>
         <input
           type="text"
           value={form.link}
+          placeholder="https://example.com"
           onChange={(e) => setForm({ ...form, link: e.target.value })}
-          className="w-full py-1 border-b border-gray-300 focus:outline-none"
+          className="w-full py-1 border-b border-gray-300 focus:outline-none bg-transparent"
         />
       </div>
 
@@ -193,7 +249,7 @@ export default function ProfileSettings() {
           }`}
         >
           <span
-            className={`absolute top-1 h-5 w-5 rounded-full bg-white transition ${
+            className={`absolute bg-white top-1 h-5 w-5 rounded-full  transition ${
               form.isPrivate ? "left-8" : "left-1"
             }`}
           />

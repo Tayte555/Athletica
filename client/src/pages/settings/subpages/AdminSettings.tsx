@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 
 type AdminUser = {
   _id: string;
@@ -172,6 +173,23 @@ export default function AdminSettings() {
       fetchComments(commentFilter),
       fetchLogs(),
     ]);
+  };
+
+  const needsApproval = (item: ModerationRoutine | ModerationComment) => {
+    const hasNeverBeenApproved = !item.lastModeratedAt;
+
+    const wasEditedAfterApproval =
+      item.lastModeratedAt &&
+      item.updatedAt &&
+      new Date(item.updatedAt).getTime() >
+        new Date(item.lastModeratedAt).getTime();
+
+    return (
+      hasNeverBeenApproved ||
+      wasEditedAfterApproval ||
+      item.isFlagged ||
+      item.isHidden
+    );
   };
 
   useEffect(() => {
@@ -398,10 +416,12 @@ export default function AdminSettings() {
             >
               <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                 <div>
-                  <p className="font-semibold">
-                    {user.name || user.username}{" "}
-                    <span className="text-gray-500">@{user.username}</span>
-                  </p>
+                  <Link to={`/${user.username}`}>
+                    <p className="font-semibold">
+                      {user.name || user.username}{" "}
+                      <span className="text-gray-500">@{user.username}</span>
+                    </p>
+                  </Link>
                   <p className="text-sm text-gray-500">{user.email}</p>
                   <div className="mt-2 flex flex-wrap gap-2 text-xs">
                     <span className="rounded-full bg-gray-100 px-3 py-1">
@@ -488,7 +508,12 @@ export default function AdminSettings() {
               key={routine._id}
               className="rounded-xl border border-black/10 p-4"
             >
-              <p className="font-semibold">{routine.title}</p>
+              <Link
+                to={`/routines/${routine._id}`}
+                className="font-semibold hover:underline"
+              >
+                {routine.title}
+              </Link>
               <p className="text-sm text-gray-500">
                 by {routine.createdBy?.name || routine.createdBy?.username}
               </p>
@@ -517,18 +542,20 @@ export default function AdminSettings() {
                   {routine.isFlagged ? "Unflag" : "Flag"}
                 </button>
 
-                <button
-                  onClick={() =>
-                    updateRoutine(routine._id, {
-                      isFlagged: false,
-                      isHidden: false,
-                      moderationNote: "",
-                    })
-                  }
-                  className="rounded-lg bg-black px-3 py-2 text-sm text-white"
-                >
-                  Approve
-                </button>
+                {needsApproval(routine) && (
+                  <button
+                    onClick={() =>
+                      updateRoutine(routine._id, {
+                        isFlagged: false,
+                        isHidden: false,
+                        moderationNote: "",
+                      })
+                    }
+                    className="rounded-lg bg-black px-3 py-2 text-sm text-white"
+                  >
+                    Approve
+                  </button>
+                )}
 
                 <button
                   onClick={() => deleteRoutine(routine._id)}
@@ -607,18 +634,20 @@ export default function AdminSettings() {
                   {comment.isFlagged ? "Unflag" : "Flag"}
                 </button>
 
-                <button
-                  onClick={() =>
-                    updateComment(comment._id, {
-                      isFlagged: false,
-                      isHidden: false,
-                      moderationNote: "",
-                    })
-                  }
-                  className="rounded-lg bg-black px-3 py-2 text-sm text-white"
-                >
-                  Approve
-                </button>
+                {needsApproval(comment) && (
+                  <button
+                    onClick={() =>
+                      updateComment(comment._id, {
+                        isFlagged: false,
+                        isHidden: false,
+                        moderationNote: "",
+                      })
+                    }
+                    className="rounded-lg bg-black px-3 py-2 text-sm text-white"
+                  >
+                    Approve
+                  </button>
+                )}
 
                 <button
                   onClick={() => deleteComment(comment._id)}
