@@ -2,8 +2,6 @@
 
 Athletica is a social fitness web application designed to help users create, manage, discover, and share workout routines. The platform allows users to build personalised training plans, explore community-created routines, follow other users, and stay motivated through social fitness features.
 
----
-
 ## ✨ Features
 
 - User authentication (Register / Login)
@@ -15,8 +13,6 @@ Athletica is a social fitness web application designed to help users create, man
 - Notifications system
 - Routine optimisation and recommendations
 - Admin moderation tools
-
----
 
 ## 🛠️ Tech Stack
 
@@ -35,8 +31,6 @@ Athletica is a social fitness web application designed to help users create, man
 - MongoDB
 - JWT Authentication
 
----
-
 ## 🚀 Running Athletica Locally (Development Environment)
 
 ## 📥 1. Clone the Repository
@@ -45,8 +39,6 @@ Athletica is a social fitness web application designed to help users create, man
 git clone https://github.com/Tayte555/Athletica.git
 cd athletica
 ```
-
----
 
 ## 📦 2. Install Dependencies
 
@@ -64,8 +56,6 @@ npm run server:i
 npm run client:i
 ```
 
----
-
 ## 🔐 3. Environment Variables
 
 This project requires environment variables to run correctly for development.
@@ -81,8 +71,6 @@ These include values such as:
 
 Do not commit `.env` files to version control.
 
----
-
 ## ▶️ 4. Start the Development Server
 
 To run both frontend and backend together:
@@ -92,8 +80,6 @@ npm run dev
 ```
 
 This uses `concurrently` to start both services at the same time.
-
----
 
 ## 📜 Available Scripts
 
@@ -133,8 +119,6 @@ npm run client:i
 npm run install:all
 ```
 
----
-
 ## 🗂️ Project Structure
 
 ```text
@@ -149,8 +133,6 @@ athletica/
 └── README.md
 ```
 
----
-
 ## 📝 Notes
 
 This project is currently configured for local development use.
@@ -158,8 +140,6 @@ This project is currently configured for local development use.
 Make sure MongoDB is running and your environment variables are correctly configured before starting the application.
 
 If you experience setup issues, please contact me directly.
-
----
 
 ## 👨‍💻 Author
 
