@@ -4,10 +4,10 @@ import Footer from "../../components/UI/Footer";
 
 export default function AboutPage() {
   return (
-    <div className="flex min-h-screen flex-col bg-white text-black">
+    <div className="flex flex-col bg-white text-black">
       <Navbar />
 
-      <main className="mx-auto grid w-full max-w-6xl flex-1 gap-12 px-6 py-16 md:grid-cols-2 md:items-center md:px-10 lg:px-12">
+      <main className="min-h-screen mx-auto grid w-full max-w-6xl flex-1 px-6 md:grid-cols-2 md:items-center md:px-10 lg:px-12">
         <section className="max-w-xl">
           <h1 className="text-5xl font-extrabold tracking-tight md:text-6xl">
             About

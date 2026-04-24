@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import Navbar from "../../../components/UI/Navbar";
 import Footer from "../../../components/UI/Footer";
+import ErrorModal from "../../../components/UI/ErrorModal";
 import { apiDelete, apiGet, apiPost } from "../../../lib/routineApi";
 import type { Routine } from "../../../types/routine";
 import {
@@ -19,17 +20,32 @@ export default function RoutinePage() {
   const [followingRoutines, setFollowingRoutines] = useState<Routine[]>([]);
   const [loading, setLoading] = useState(true);
   const [followingLoading, setFollowingLoading] = useState(true);
-  const [error, setError] = useState("");
+
+  const [errorModal, setErrorModal] = useState({
+    isOpen: false,
+    title: "Something went wrong",
+    message: "",
+  });
+
+  const showError = (message: string, title = "Something went wrong") => {
+    setErrorModal({
+      isOpen: true,
+      title,
+      message,
+    });
+  };
 
   useEffect(() => {
     const fetchRoutines = async () => {
       try {
         setLoading(true);
+
         const data = await apiGet<Routine[]>("/api/routines/public");
         setRoutines(data);
       } catch (err) {
-        setError(
+        showError(
           err instanceof Error ? err.message : "Failed to load routines",
+          "Routine Error",
         );
       } finally {
         setLoading(false);
@@ -43,15 +59,18 @@ export default function RoutinePage() {
     const fetchFollowingRoutines = async () => {
       try {
         setFollowingLoading(true);
+
         const data = await apiGet<Routine[]>(
           "/api/routines/recommended?context=routines&limit=3",
         );
+
         setFollowingRoutines(data);
       } catch (err) {
-        setError(
+        showError(
           err instanceof Error
             ? err.message
             : "Failed to load suggested routines",
+          "Suggested Routine Error",
         );
       } finally {
         setFollowingLoading(false);
@@ -77,7 +96,7 @@ export default function RoutinePage() {
         prev.map((item) => (item._id === updated._id ? updated : item)),
       );
     } catch (err) {
-      setError(
+      showError(
         err instanceof Error ? err.message : "Failed to update save state",
       );
     }
@@ -87,14 +106,16 @@ export default function RoutinePage() {
     <div className="min-h-screen bg-[#f7f7f7] text-[#111]">
       <Navbar />
 
-      <main className="mx-auto w-full max-w-[1440px] px-6 pb-28 pt-10 md:px-10 lg:px-16">
+      <main className="min-h-screen mx-auto w-full max-w-[1440px] px-6 pb-28 pt-10 md:px-10 lg:px-16">
         <section className="mb-10">
           <p className="mb-2 text-sm uppercase tracking-[0.18em] text-[#777]">
             Athletica
           </p>
+
           <h1 className="text-4xl font-bold tracking-tight md:text-6xl">
             Routines
           </h1>
+
           <p className="mt-3 max-w-2xl text-base text-[#555]">
             Create, save and explore workout routines from the community.
           </p>
@@ -108,10 +129,13 @@ export default function RoutinePage() {
             <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-black text-white">
               <Plus size={22} />
             </div>
+
             <h2 className="text-2xl font-semibold">Create Routine</h2>
+
             <p className="mt-2 text-sm text-[#666]">
               Build a brand new workout routine.
             </p>
+
             <div className="mt-6 inline-flex items-center gap-2 text-sm font-medium">
               Go to creator
               <ArrowRight
@@ -128,10 +152,13 @@ export default function RoutinePage() {
             <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-black/5">
               <FolderOpen size={22} />
             </div>
+
             <h2 className="text-2xl font-semibold">My Routines</h2>
+
             <p className="mt-2 text-sm text-[#666]">
               View and manage your created routines.
             </p>
+
             <div className="mt-6 inline-flex items-center gap-2 text-sm font-medium">
               Open your routines
               <ArrowRight
@@ -148,10 +175,13 @@ export default function RoutinePage() {
             <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-black/5">
               <Bookmark size={22} />
             </div>
+
             <h2 className="text-2xl font-semibold">Saved Routines</h2>
+
             <p className="mt-2 text-sm text-[#666]">
               Revisit routines you have saved.
             </p>
+
             <div className="mt-6 inline-flex items-center gap-2 text-sm font-medium">
               View saved
               <ArrowRight
@@ -168,10 +198,13 @@ export default function RoutinePage() {
             <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-black/5">
               <Compass size={22} />
             </div>
+
             <h2 className="text-2xl font-semibold">Discover</h2>
+
             <p className="mt-2 text-sm text-[#666]">
               Explore public routines from other users.
             </p>
+
             <div className="mt-6 inline-flex items-center gap-2 text-sm font-medium">
               Browse community
               <ArrowRight
@@ -192,9 +225,11 @@ export default function RoutinePage() {
               <p className="mb-2 text-sm uppercase tracking-[0.18em] text-[#777]">
                 Suggested routines
               </p>
+
               <h2 className="text-2xl font-bold md:text-4xl">
                 From people you follow
               </h2>
+
               <p className="mt-2 max-w-2xl text-sm text-[#666]">
                 Recently created public routines from accounts you follow.
               </p>
@@ -233,6 +268,7 @@ export default function RoutinePage() {
                       <h3 className="text-2xl font-semibold leading-tight">
                         {routine.title}
                       </h3>
+
                       <p className="mt-1 text-sm text-[#666]">
                         by{" "}
                         {routine.createdBy?.name || routine.createdBy?.username}
@@ -247,6 +283,7 @@ export default function RoutinePage() {
                       <span className="rounded-full bg-black/5 px-3 py-1 text-xs font-medium">
                         {routine.difficulty}
                       </span>
+
                       <span className="rounded-full bg-black/5 px-3 py-1 text-xs font-medium">
                         {routine.durationMinutes} min
                       </span>
@@ -259,6 +296,7 @@ export default function RoutinePage() {
                       >
                         View Details
                       </Link>
+
                       <button
                         onClick={() => toggleSave(routine)}
                         className="rounded-xl border border-black/10 px-4 py-2 text-sm font-medium transition hover:bg-black/5"
@@ -283,9 +321,11 @@ export default function RoutinePage() {
             <p className="mb-2 text-sm uppercase tracking-[0.18em] text-[#777]">
               Community
             </p>
+
             <h2 className="text-2xl font-bold md:text-4xl">
               Explore Public Routines
             </h2>
+
             <p className="mt-2 max-w-2xl text-sm text-[#666]">
               Search through public routines created by other Athletica users.
             </p>
@@ -294,8 +334,6 @@ export default function RoutinePage() {
 
         {loading ? (
           <p>Loading routines...</p>
-        ) : error ? (
-          <p className="text-red-600">{error}</p>
         ) : (
           <section className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
             {visiblePublicRoutines.map((routine) => (
@@ -322,6 +360,7 @@ export default function RoutinePage() {
                     <h3 className="text-2xl font-semibold leading-tight">
                       {routine.title}
                     </h3>
+
                     <p className="mt-1 text-sm text-[#666]">
                       by{" "}
                       {routine.createdBy?.name || routine.createdBy?.username}
@@ -336,6 +375,7 @@ export default function RoutinePage() {
                     <span className="rounded-full bg-black/5 px-3 py-1 text-xs font-medium">
                       {routine.difficulty}
                     </span>
+
                     <span className="rounded-full bg-black/5 px-3 py-1 text-xs font-medium">
                       {routine.durationMinutes} min
                     </span>
@@ -348,6 +388,7 @@ export default function RoutinePage() {
                     >
                       View Details
                     </Link>
+
                     <button
                       onClick={() => toggleSave(routine)}
                       className="rounded-xl border border-black/10 px-4 py-2 text-sm font-medium transition hover:bg-black/5"
@@ -372,6 +413,18 @@ export default function RoutinePage() {
       </main>
 
       <Footer />
+
+      <ErrorModal
+        isOpen={errorModal.isOpen}
+        title={errorModal.title}
+        message={errorModal.message}
+        onClose={() =>
+          setErrorModal((prev) => ({
+            ...prev,
+            isOpen: false,
+          }))
+        }
+      />
     </div>
   );
 }

@@ -1,5 +1,6 @@
 import Footer from "../../components/UI/Footer";
 import Navbar from "../../components/UI/Navbar";
+import ErrorModal from "../../components/UI/ErrorModal";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { apiDelete, apiGet, apiPost } from "../../lib/routineApi";
@@ -10,7 +11,20 @@ export default function DashboardPage() {
   const [username, setUsername] = useState("");
   const [recommendedRoutines, setRecommendedRoutines] = useState<Routine[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+
+  const [errorModal, setErrorModal] = useState({
+    isOpen: false,
+    title: "Something went wrong",
+    message: "",
+  });
+
+  const showError = (message: string, title = "Something went wrong") => {
+    setErrorModal({
+      isOpen: true,
+      title,
+      message,
+    });
+  };
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -21,10 +35,19 @@ export default function DashboardPage() {
         const res = await fetch("/api/user/me", {
           headers: { Authorization: `Bearer ${token}` },
         });
+
+        if (!res.ok) {
+          showError("Failed to load your profile details", "Profile Error");
+          return;
+        }
+
         const data = await res.json();
         setUsername(data.username || "");
       } catch (err) {
-        console.error("Failed to fetch profile:", err);
+        showError(
+          err instanceof Error ? err.message : "Failed to fetch profile",
+          "Profile Error",
+        );
       }
     };
 
@@ -35,15 +58,18 @@ export default function DashboardPage() {
     const fetchRecommendedRoutines = async () => {
       try {
         setLoading(true);
+
         const data = await apiGet<Routine[]>(
           "/api/routines/recommended?context=dashboard&limit=4",
         );
+
         setRecommendedRoutines(data);
       } catch (err) {
-        setError(
+        showError(
           err instanceof Error
             ? err.message
             : "Failed to load recommended routines",
+          "Recommendation Error",
         );
       } finally {
         setLoading(false);
@@ -63,17 +89,17 @@ export default function DashboardPage() {
         prev.map((item) => (item._id === updated._id ? updated : item)),
       );
     } catch (err) {
-      setError(
+      showError(
         err instanceof Error ? err.message : "Failed to update save state",
       );
     }
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="bg-gray-50">
       <Navbar />
 
-      <main className="mx-auto max-w-7xl px-6 py-10">
+      <main className="mx-auto max-w-7xl px-6 py-10 min-h-screen">
         <section className="mb-10">
           <h1 className="text-5xl font-bold md:text-6xl">
             Hi {username || "Athlete"}!
@@ -108,8 +134,6 @@ export default function DashboardPage() {
 
           {loading ? (
             <p className="text-sm text-gray-600">Loading recommendations...</p>
-          ) : error ? (
-            <p className="text-sm text-red-600">{error}</p>
           ) : recommendedRoutines.length === 0 ? (
             <p className="text-sm text-gray-600">
               No recommended routines available yet.
@@ -224,6 +248,18 @@ export default function DashboardPage() {
       </main>
 
       <Footer />
+
+      <ErrorModal
+        isOpen={errorModal.isOpen}
+        title={errorModal.title}
+        message={errorModal.message}
+        onClose={() =>
+          setErrorModal((prev) => ({
+            ...prev,
+            isOpen: false,
+          }))
+        }
+      />
     </div>
   );
 }

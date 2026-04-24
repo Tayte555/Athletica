@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import Navbar from "../../components/UI/Navbar";
 import Footer from "../../components/UI/Footer";
+import ErrorModal from "../../components/UI/ErrorModal";
 import ExercisePickerModal from "../../components/routines/ExercisePickerModal";
 import { apiGet, apiPut } from "../../lib/routineApi";
 import type { Exercise, Routine } from "../../types/routine";
@@ -39,8 +40,21 @@ export default function RoutineEditPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [showPicker, setShowPicker] = useState(false);
-  const [error, setError] = useState("");
   const [coverUploading, setCoverUploading] = useState(false);
+
+  const [errorModal, setErrorModal] = useState({
+    isOpen: false,
+    title: "Something went wrong",
+    message: "",
+  });
+
+  const showError = (message: string, title = "Something went wrong") => {
+    setErrorModal({
+      isOpen: true,
+      title,
+      message,
+    });
+  };
 
   const [form, setForm] = useState({
     title: "",
@@ -56,13 +70,13 @@ export default function RoutineEditPage() {
     image: "",
     isPublic: true,
   });
+
   const [exercises, setExercises] = useState<SelectedRoutineExercise[]>([]);
 
   useEffect(() => {
     const fetchRoutine = async () => {
       try {
         setLoading(true);
-        setError("");
 
         const routine = await apiGet<Routine>(`/api/routines/${id}`);
 
@@ -106,7 +120,10 @@ export default function RoutineEditPage() {
           })),
         );
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to load routine");
+        showError(
+          err instanceof Error ? err.message : "Failed to load routine",
+          "Routine Error",
+        );
       } finally {
         setLoading(false);
       }
@@ -174,12 +191,11 @@ export default function RoutineEditPage() {
 
     try {
       setCoverUploading(true);
-      setError("");
 
       const imageUrl = await uploadImage("/api/routines/upload-cover", file);
       setForm((prev) => ({ ...prev, image: imageUrl }));
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to upload image");
+      showError(err instanceof Error ? err.message : "Failed to upload image");
     } finally {
       setCoverUploading(false);
     }
@@ -187,15 +203,13 @@ export default function RoutineEditPage() {
 
   const handleSave = async () => {
     try {
-      setError("");
-
       if (!form.title.trim()) {
-        setError("Routine title is required");
+        showError("Routine title is required", "Missing title");
         return;
       }
 
       if (exercises.length === 0) {
-        setError("Add at least one exercise");
+        showError("Add at least one exercise", "Missing exercises");
         return;
       }
 
@@ -223,7 +237,9 @@ export default function RoutineEditPage() {
       const updated = await apiPut<Routine>(`/api/routines/${id}`, payload);
       navigate(`/routines/${updated._id}`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to update routine");
+      showError(
+        err instanceof Error ? err.message : "Failed to update routine",
+      );
     } finally {
       setSaving(false);
     }
@@ -234,6 +250,19 @@ export default function RoutineEditPage() {
       <div className="min-h-screen bg-[#f6f6f6]">
         <Navbar />
         <main className="mx-auto max-w-[1200px] px-6 py-16">Loading...</main>
+
+        <ErrorModal
+          isOpen={errorModal.isOpen}
+          title={errorModal.title}
+          message={errorModal.message}
+          onClose={() =>
+            setErrorModal((prev) => ({
+              ...prev,
+              isOpen: false,
+            }))
+          }
+        />
+
         <Footer />
       </div>
     );
@@ -435,8 +464,6 @@ export default function RoutineEditPage() {
               >
                 {saving ? "Saving..." : "Save Changes"}
               </button>
-
-              {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
             </div>
           </div>
         </section>
@@ -444,7 +471,9 @@ export default function RoutineEditPage() {
         <section className="grid gap-4">
           {exercises.map((item, index) => (
             <div
-              key={`${item.exercise?._id || item.customExercise?.name || "exercise"}-${index}`}
+              key={`${
+                item.exercise?._id || item.customExercise?.name || "exercise"
+              }-${index}`}
               className="rounded-[24px] border border-black/10 bg-white p-5"
             >
               <div className="mb-4 flex items-start justify-between gap-4">
@@ -460,6 +489,7 @@ export default function RoutineEditPage() {
                         item.customExercise?.name ||
                         "Custom Exercise"}
                     </h3>
+
                     <p className="mt-1 text-sm text-[#666]">
                       {item.exercise?.muscleGroup ||
                         item.customExercise?.muscleGroup ||
@@ -475,12 +505,14 @@ export default function RoutineEditPage() {
                   >
                     Up
                   </button>
+
                   <button
                     onClick={() => moveExercise(index, "down")}
                     className="rounded-xl border border-black/10 px-3 py-2 text-sm hover:bg-black/5"
                   >
                     Down
                   </button>
+
                   <button
                     onClick={() => removeExercise(index)}
                     className="rounded-xl border border-red-200 px-3 py-2 text-sm text-red-600 hover:bg-red-50"
@@ -500,6 +532,7 @@ export default function RoutineEditPage() {
                   placeholder="Sets"
                   className="h-11 rounded-xl border border-black/10 px-4 text-sm outline-none"
                 />
+
                 <input
                   value={item.reps}
                   onChange={(e) =>
@@ -508,6 +541,7 @@ export default function RoutineEditPage() {
                   placeholder="Reps"
                   className="h-11 rounded-xl border border-black/10 px-4 text-sm outline-none"
                 />
+
                 <input
                   type="number"
                   value={item.restSeconds}
@@ -517,6 +551,7 @@ export default function RoutineEditPage() {
                   placeholder="Rest seconds"
                   className="h-11 rounded-xl border border-black/10 px-4 text-sm outline-none"
                 />
+
                 <input
                   value={
                     item.exercise?.equipment?.join(", ") ||
@@ -553,6 +588,18 @@ export default function RoutineEditPage() {
         open={showPicker}
         onClose={() => setShowPicker(false)}
         onAddExercise={addExerciseToRoutine}
+      />
+
+      <ErrorModal
+        isOpen={errorModal.isOpen}
+        title={errorModal.title}
+        message={errorModal.message}
+        onClose={() =>
+          setErrorModal((prev) => ({
+            ...prev,
+            isOpen: false,
+          }))
+        }
       />
     </div>
   );

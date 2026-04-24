@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Navbar from "../../components/UI/Navbar";
 import Footer from "../../components/UI/Footer";
+import ErrorModal from "../../components/UI/ErrorModal";
 import ExercisePickerModal from "../../components/routines/ExercisePickerModal";
 import { apiPost } from "../../lib/routineApi";
 import type { Exercise, Routine } from "../../types/routine";
@@ -36,8 +37,21 @@ export default function RoutineCreatePage() {
   const navigate = useNavigate();
   const [showPicker, setShowPicker] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState("");
   const [coverUploading, setCoverUploading] = useState(false);
+
+  const [errorModal, setErrorModal] = useState({
+    isOpen: false,
+    title: "Something went wrong",
+    message: "",
+  });
+
+  const showError = (message: string, title = "Something went wrong") => {
+    setErrorModal({
+      isOpen: true,
+      title,
+      message,
+    });
+  };
 
   const [form, setForm] = useState({
     title: "",
@@ -111,12 +125,11 @@ export default function RoutineCreatePage() {
 
     try {
       setCoverUploading(true);
-      setError("");
 
       const imageUrl = await uploadImage("/api/routines/upload-cover", file);
       setForm((prev) => ({ ...prev, image: imageUrl }));
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to upload image");
+      showError(err instanceof Error ? err.message : "Failed to upload image");
     } finally {
       setCoverUploading(false);
     }
@@ -126,15 +139,13 @@ export default function RoutineCreatePage() {
 
   const handleSaveRoutine = async () => {
     try {
-      setError("");
-
       if (!form.title.trim()) {
-        setError("Routine title is required");
+        showError("Routine title is required", "Missing title");
         return;
       }
 
       if (exercises.length === 0) {
-        setError("Add at least one exercise");
+        showError("Add at least one exercise", "Missing exercises");
         return;
       }
 
@@ -162,7 +173,7 @@ export default function RoutineCreatePage() {
       const created = await apiPost<Routine>("/api/routines", payload);
       navigate(`/routines/${created._id}`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to save routine");
+      showError(err instanceof Error ? err.message : "Failed to save routine");
     } finally {
       setSaving(false);
     }
@@ -276,6 +287,7 @@ export default function RoutineCreatePage() {
                 />
               </div>
             </div>
+
             <input
               value={form.tags}
               onChange={(e) =>
@@ -363,8 +375,6 @@ export default function RoutineCreatePage() {
               >
                 {saving ? "Saving..." : "Create Routine"}
               </button>
-
-              {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
             </div>
           </div>
         </section>
@@ -389,6 +399,7 @@ export default function RoutineCreatePage() {
                   <div className="rounded-xl bg-black/5 p-2">
                     <GripVertical size={18} />
                   </div>
+
                   <div>
                     <h3 className="text-xl font-semibold">
                       {item.order}.{" "}
@@ -396,6 +407,7 @@ export default function RoutineCreatePage() {
                         item.customExercise?.name ||
                         "Custom Exercise"}
                     </h3>
+
                     <p className="mt-1 text-sm text-[#666]">
                       {item.exercise?.muscleGroup ||
                         item.customExercise?.muscleGroup ||
@@ -411,12 +423,14 @@ export default function RoutineCreatePage() {
                   >
                     Up
                   </button>
+
                   <button
                     onClick={() => moveExercise(index, "down")}
                     className="rounded-xl border border-black/10 px-3 py-2 text-sm hover:bg-black/5"
                   >
                     Down
                   </button>
+
                   <button
                     onClick={() => removeExercise(index)}
                     className="rounded-xl border border-red-200 px-3 py-2 text-sm text-red-600 hover:bg-red-50"
@@ -436,6 +450,7 @@ export default function RoutineCreatePage() {
                   placeholder="Sets"
                   className="h-11 rounded-xl border border-black/10 px-4 text-sm outline-none"
                 />
+
                 <input
                   value={item.reps}
                   onChange={(e) =>
@@ -444,6 +459,7 @@ export default function RoutineCreatePage() {
                   placeholder="Reps"
                   className="h-11 rounded-xl border border-black/10 px-4 text-sm outline-none"
                 />
+
                 <input
                   type="number"
                   value={item.restSeconds}
@@ -453,6 +469,7 @@ export default function RoutineCreatePage() {
                   placeholder="Rest seconds"
                   className="h-11 rounded-xl border border-black/10 px-4 text-sm outline-none"
                 />
+
                 <input
                   value={
                     item.exercise?.equipment?.join(", ") ||
@@ -489,6 +506,18 @@ export default function RoutineCreatePage() {
         open={showPicker}
         onClose={() => setShowPicker(false)}
         onAddExercise={addExerciseToRoutine}
+      />
+
+      <ErrorModal
+        isOpen={errorModal.isOpen}
+        title={errorModal.title}
+        message={errorModal.message}
+        onClose={() =>
+          setErrorModal((prev) => ({
+            ...prev,
+            isOpen: false,
+          }))
+        }
       />
     </div>
   );

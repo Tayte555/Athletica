@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, Link, useParams } from "react-router-dom";
 import Navbar from "../../components/UI/Navbar";
 import Footer from "../../components/UI/Footer";
+import ErrorModal from "../../components/UI/ErrorModal";
 import { apiDelete, apiGet, apiPost } from "../../lib/routineApi";
 import type { Routine } from "../../types/routine";
 import { Bookmark, Edit, Heart, MessageCircle, Sparkles } from "lucide-react";
@@ -22,23 +23,36 @@ type RoutineComment = {
 
 export default function RoutineDetailsPage() {
   const { id } = useParams();
+  const navigate = useNavigate();
+
   const [routine, setRoutine] = useState<Routine | null>(null);
   const [comments, setComments] = useState<RoutineComment[]>([]);
   const [commentText, setCommentText] = useState("");
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+
   const [saveLoading, setSaveLoading] = useState(false);
   const [likeLoading, setLikeLoading] = useState(false);
   const [commentLoading, setCommentLoading] = useState(false);
   const [showOptimiseModal, setShowOptimiseModal] = useState(false);
 
-  const navigate = useNavigate();
+  const [errorModal, setErrorModal] = useState({
+    isOpen: false,
+    title: "Something went wrong",
+    message: "",
+  });
+
+  const showError = (message: string, title = "Something went wrong") => {
+    setErrorModal({
+      isOpen: true,
+      title,
+      message,
+    });
+  };
 
   useEffect(() => {
     const fetchRoutine = async () => {
       try {
         setLoading(true);
-        setError("");
 
         const [routineData, commentsData] = await Promise.all([
           apiGet<Routine>(`/api/routines/${id}`),
@@ -48,7 +62,10 @@ export default function RoutineDetailsPage() {
         setRoutine(routineData);
         setComments(commentsData);
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to load routine");
+        showError(
+          err instanceof Error ? err.message : "Failed to load routine",
+          "Routine Error",
+        );
       } finally {
         setLoading(false);
       }
@@ -82,7 +99,7 @@ export default function RoutineDetailsPage() {
           : updated,
       );
     } catch (err) {
-      setError(
+      showError(
         err instanceof Error ? err.message : "Failed to update save state",
       );
     } finally {
@@ -118,7 +135,7 @@ export default function RoutineDetailsPage() {
           : prev,
       );
     } catch (err) {
-      setError(
+      showError(
         err instanceof Error ? err.message : "Failed to update like state",
       );
     } finally {
@@ -148,7 +165,7 @@ export default function RoutineDetailsPage() {
       setComments((prev) => [newComment, ...prev]);
       setCommentText("");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to add comment");
+      showError(err instanceof Error ? err.message : "Failed to add comment");
     } finally {
       setCommentLoading(false);
     }
@@ -164,14 +181,25 @@ export default function RoutineDetailsPage() {
     );
   }
 
-  if (error || !routine) {
+  if (!routine) {
     return (
       <div className="min-h-screen bg-[#f6f6f6]">
         <Navbar />
-        <main className="mx-auto max-w-[1200px] px-6 py-16 text-red-600">
-          {error || "Routine not found"}
-        </main>
+        <main className=" mx-auto max-w-[1200px] px-6 py-16 min-h-screen"></main>
         <Footer />
+
+        <ErrorModal
+          isOpen={errorModal.isOpen}
+          title={errorModal.title}
+          message={errorModal.message}
+          onClose={() => {
+            setErrorModal((prev) => ({
+              ...prev,
+              isOpen: false,
+            }));
+            navigate("/routines");
+          }}
+        />
       </div>
     );
   }
@@ -186,6 +214,7 @@ export default function RoutineDetailsPage() {
             <p className="mb-2 text-sm uppercase tracking-[0.18em] text-[#777]">
               Routine
             </p>
+
             <h1 className="text-4xl font-bold tracking-tight md:text-5xl">
               {routine.title}
             </h1>
@@ -212,6 +241,7 @@ export default function RoutineDetailsPage() {
                 </p>
                 <p className="mt-1 font-semibold">{routine.difficulty}</p>
               </div>
+
               <div className="rounded-2xl border border-black/10 p-4">
                 <p className="text-xs uppercase tracking-wide text-[#777]">
                   Duration
@@ -220,6 +250,7 @@ export default function RoutineDetailsPage() {
                   {routine.durationMinutes} min
                 </p>
               </div>
+
               <div className="rounded-2xl border border-black/10 p-4">
                 <p className="text-xs uppercase tracking-wide text-[#777]">
                   Focus
@@ -228,6 +259,7 @@ export default function RoutineDetailsPage() {
                   {routine.focus || "Not specified"}
                 </p>
               </div>
+
               <div className="rounded-2xl border border-black/10 p-4">
                 <p className="text-xs uppercase tracking-wide text-[#777]">
                   Workout Type
@@ -295,12 +327,13 @@ export default function RoutineDetailsPage() {
                 </div>
               )}
 
-              <div className=" grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-3">
                 <ShareRoutineButton
                   routineId={routine._id}
                   title={routine.title}
                   className="w-full"
                 />
+
                 <a
                   href="#comments"
                   className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl border border-black/10 px-4 py-3 text-sm font-medium transition hover:bg-black/5"
@@ -394,7 +427,9 @@ export default function RoutineDetailsPage() {
           <div className="grid gap-4">
             {routine.exercises.map((item, index) => (
               <div
-                key={`${item.exercise?._id || item.customExercise?.name || "exercise"}-${item.order || index}`}
+                key={`${
+                  item.exercise?._id || item.customExercise?.name || "exercise"
+                }-${item.order || index}`}
                 className="rounded-[24px] border border-black/10 bg-white p-5"
               >
                 <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
@@ -405,6 +440,7 @@ export default function RoutineDetailsPage() {
                         item.customExercise?.name ||
                         "Exercise"}
                     </h3>
+
                     <p className="mt-1 text-sm text-[#666]">
                       {item.exerciseData?.muscleGroup ||
                         item.customExercise?.muscleGroup ||
@@ -416,9 +452,11 @@ export default function RoutineDetailsPage() {
                     <span className="rounded-full bg-black/5 px-3 py-1 text-sm">
                       {item.sets} sets
                     </span>
+
                     <span className="rounded-full bg-black/5 px-3 py-1 text-sm">
                       {item.reps} reps
                     </span>
+
                     <span className="rounded-full bg-black/5 px-3 py-1 text-sm">
                       {item.restSeconds}s rest
                     </span>
@@ -499,6 +537,7 @@ export default function RoutineDetailsPage() {
                       <p className="font-medium">
                         {comment.user?.name || comment.user?.username || "User"}
                       </p>
+
                       <p className="text-xs text-[#777]">
                         @{comment.user?.username || "user"}
                       </p>
@@ -525,6 +564,18 @@ export default function RoutineDetailsPage() {
           routineTitle={routine.title}
         />
       )}
+
+      <ErrorModal
+        isOpen={errorModal.isOpen}
+        title={errorModal.title}
+        message={errorModal.message}
+        onClose={() =>
+          setErrorModal((prev) => ({
+            ...prev,
+            isOpen: false,
+          }))
+        }
+      />
 
       <Footer />
     </div>

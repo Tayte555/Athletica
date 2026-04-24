@@ -148,7 +148,7 @@ export default function RegistrationPage() {
               value={formData.username}
               onChange={handleChange}
               onBlur={handleBlur}
-              placeholder="e.g. TayteLift"
+              placeholder="e.g. TayteKeates55"
               className={inputClass("username")}
             />
             <p className="mt-2 min-h-[20px] text-sm text-red-500">

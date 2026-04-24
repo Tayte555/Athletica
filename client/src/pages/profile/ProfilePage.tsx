@@ -1,5 +1,6 @@
 import Footer from "../../components/UI/Footer";
 import Navbar from "../../components/UI/Navbar";
+import ErrorModal from "../../components/UI/ErrorModal";
 import { useNavigate, useParams, Link } from "react-router-dom";
 import { useState, useEffect } from "react";
 
@@ -72,6 +73,20 @@ export default function Profile() {
   const [showAllCreated, setShowAllCreated] = useState(false);
   const [showAllActivity, setShowAllActivity] = useState(false);
 
+  const [errorModal, setErrorModal] = useState({
+    isOpen: false,
+    title: "Something went wrong",
+    message: "",
+  });
+
+  const showError = (message: string, title = "Something went wrong") => {
+    setErrorModal({
+      isOpen: true,
+      title,
+      message,
+    });
+  };
+
   const [profile, setProfile] = useState<ProfileData>({
     _id: "",
     avatar: "",
@@ -127,7 +142,6 @@ export default function Profile() {
 
       if (!res.ok) {
         setUserNotFound(true);
-        setLoading(false);
         return;
       }
 
@@ -140,7 +154,10 @@ export default function Profile() {
           : "/assets/default-avatar.jpg",
       });
     } catch (err) {
-      console.error("Failed to fetch profile:", err);
+      showError(
+        err instanceof Error ? err.message : "Failed to fetch profile",
+        "Profile Error",
+      );
       setUserNotFound(true);
     } finally {
       setLoading(false);
@@ -170,7 +187,10 @@ export default function Profile() {
       setAvailableToPin(data.availableToPin || []);
       setRecentActivity(data.recentActivity || []);
     } catch (err) {
-      console.error("Failed to fetch profile content:", err);
+      showError(
+        err instanceof Error ? err.message : "Failed to fetch profile content",
+        "Profile Content Error",
+      );
     } finally {
       setContentLoading(false);
     }
@@ -189,10 +209,14 @@ export default function Profile() {
         });
 
         if (!res.ok) return;
+
         const data = await res.json();
         setCurrentUser(data.username);
       } catch (err) {
-        console.error("Failed to fetch current user:", err);
+        showError(
+          err instanceof Error ? err.message : "Failed to fetch current user",
+          "User Error",
+        );
       }
     };
 
@@ -227,7 +251,7 @@ export default function Profile() {
       const data = await res.json();
 
       if (!res.ok) {
-        alert(data.message || "Something went wrong");
+        showError(data.message || "Something went wrong", "Follow Error");
         return;
       }
 
@@ -261,14 +285,20 @@ export default function Profile() {
 
       await fetchProfileContent();
     } catch (err) {
-      console.error("Follow action failed:", err);
+      showError(
+        err instanceof Error ? err.message : "Follow action failed",
+        "Follow Error",
+      );
     } finally {
       setActionLoading(false);
     }
   };
 
   const handlePinRoutine = async (routineId: string) => {
-    if (!token) return;
+    if (!token) {
+      navigate("/login");
+      return;
+    }
 
     try {
       setPinLoadingId(routineId);
@@ -283,21 +313,27 @@ export default function Profile() {
       const data = await res.json();
 
       if (!res.ok) {
-        alert(data.message || "Failed to pin routine");
+        showError(data.message || "Failed to pin routine", "Pin Error");
         return;
       }
 
       await refreshProfileContent();
       setShowPinnedManager(false);
     } catch (err) {
-      console.error("Failed to pin routine:", err);
+      showError(
+        err instanceof Error ? err.message : "Failed to pin routine",
+        "Pin Error",
+      );
     } finally {
       setPinLoadingId(null);
     }
   };
 
   const handleUnpinRoutine = async (routineId: string) => {
-    if (!token) return;
+    if (!token) {
+      navigate("/login");
+      return;
+    }
 
     try {
       setPinLoadingId(routineId);
@@ -312,13 +348,16 @@ export default function Profile() {
       const data = await res.json();
 
       if (!res.ok) {
-        alert(data.message || "Failed to unpin routine");
+        showError(data.message || "Failed to unpin routine", "Pin Error");
         return;
       }
 
       await refreshProfileContent();
     } catch (err) {
-      console.error("Failed to unpin routine:", err);
+      showError(
+        err instanceof Error ? err.message : "Failed to unpin routine",
+        "Pin Error",
+      );
     } finally {
       setPinLoadingId(null);
     }
@@ -327,7 +366,6 @@ export default function Profile() {
   const handleActivityClick = (activity: ProfileActivity) => {
     if (activity.entityType === "routine" && activity.entityId) {
       navigate(`/routines/${activity.entityId}`);
-      return;
     }
   };
 
@@ -366,10 +404,10 @@ export default function Profile() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="bg-gray-50">
       <Navbar />
 
-      <div className="max-w-6xl mx-auto px-6 md:px-8 py-10">
+      <div className="max-w-6xl mx-auto px-6 md:px-8 py-10 min-h-screen">
         <div className="flex flex-col gap-10 lg:flex-row">
           <aside className="w-full lg:w-[300px] lg:flex-shrink-0">
             <div className="rounded-3xl border border-black/10 bg-white p-6 shadow-sm">
@@ -911,6 +949,18 @@ export default function Profile() {
       )}
 
       <Footer />
+
+      <ErrorModal
+        isOpen={errorModal.isOpen}
+        title={errorModal.title}
+        message={errorModal.message}
+        onClose={() =>
+          setErrorModal((prev) => ({
+            ...prev,
+            isOpen: false,
+          }))
+        }
+      />
     </div>
   );
 }

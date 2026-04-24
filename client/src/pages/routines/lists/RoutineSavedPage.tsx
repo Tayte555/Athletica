@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import Navbar from "../../../components/UI/Navbar";
 import Footer from "../../../components/UI/Footer";
+import ErrorModal from "../../../components/UI/ErrorModal";
 import { apiDelete, apiGet } from "../../../lib/routineApi";
 import type { Routine } from "../../../types/routine";
 import {
@@ -16,17 +17,32 @@ export default function RoutineSavedPage() {
   const [routines, setRoutines] = useState<Routine[]>([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+
+  const [errorModal, setErrorModal] = useState({
+    isOpen: false,
+    title: "Something went wrong",
+    message: "",
+  });
+
+  const showError = (message: string, title = "Something went wrong") => {
+    setErrorModal({
+      isOpen: true,
+      title,
+      message,
+    });
+  };
 
   useEffect(() => {
     const fetchSaved = async () => {
       try {
         setLoading(true);
+
         const data = await apiGet<Routine[]>("/api/routines/saved/list");
         setRoutines(data);
       } catch (err) {
-        setError(
+        showError(
           err instanceof Error ? err.message : "Failed to load saved routines",
+          "Saved Routine Error",
         );
       } finally {
         setLoading(false);
@@ -39,6 +55,7 @@ export default function RoutineSavedPage() {
   const filtered = useMemo(() => {
     return routines.filter((routine) => {
       const value = search.toLowerCase();
+
       return (
         routine.title.toLowerCase().includes(value) ||
         routine.description.toLowerCase().includes(value) ||
@@ -52,7 +69,9 @@ export default function RoutineSavedPage() {
       await apiDelete<Routine>(`/api/routines/${id}/save`);
       setRoutines((prev) => prev.filter((routine) => routine._id !== id));
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to unsave routine");
+      showError(
+        err instanceof Error ? err.message : "Failed to unsave routine",
+      );
     }
   };
 
@@ -60,14 +79,16 @@ export default function RoutineSavedPage() {
     <div className="min-h-screen bg-[#f7f7f7] text-[#111]">
       <Navbar />
 
-      <main className="mx-auto w-full max-w-[1440px] px-6 pb-28 pt-10 md:px-10 lg:px-16">
+      <main className="min-h-screen mx-auto w-full max-w-[1440px] px-6 pb-28 pt-10 md:px-10 lg:px-16">
         <section className="mb-8">
           <p className="mb-2 text-sm uppercase tracking-[0.18em] text-[#777]">
             Your collection
           </p>
+
           <h1 className="text-4xl font-bold tracking-tight md:text-6xl">
             Saved Routines
           </h1>
+
           <p className="mt-3 max-w-2xl text-base text-[#555]">
             Routines you have saved for later.
           </p>
@@ -79,6 +100,7 @@ export default function RoutineSavedPage() {
               size={18}
               className="absolute left-4 top-1/2 -translate-y-1/2 text-[#777]"
             />
+
             <input
               type="text"
               placeholder="Search saved routines..."
@@ -91,8 +113,6 @@ export default function RoutineSavedPage() {
 
         {loading ? (
           <p>Loading saved routines...</p>
-        ) : error ? (
-          <p className="text-red-600">{error}</p>
         ) : (
           <section className="grid gap-6">
             {filtered.map((routine) => (
@@ -117,6 +137,7 @@ export default function RoutineSavedPage() {
                 <div className="space-y-3">
                   <div>
                     <h2 className="text-2xl font-semibold">{routine.title}</h2>
+
                     <p className="mt-1 text-sm text-[#666]">
                       by{" "}
                       {routine.createdBy?.name || routine.createdBy?.username}
@@ -129,13 +150,16 @@ export default function RoutineSavedPage() {
                     <span className="rounded-full bg-black/5 px-3 py-1 text-xs font-medium">
                       {routine.difficulty}
                     </span>
+
                     <span className="rounded-full bg-black/5 px-3 py-1 text-xs font-medium">
                       {routine.durationMinutes} min
                     </span>
+
                     <span className="rounded-full bg-black/5 px-3 py-1 text-xs font-medium">
                       {routine.exercises.length} exercises
                     </span>
                   </div>
+
                   <div className="mt-4 flex flex-wrap gap-2">
                     <div className="inline-flex items-center gap-1.5 rounded-full bg-gray-100 px-3 py-1 text-xs text-gray-600">
                       <Heart size={14} />
@@ -161,6 +185,7 @@ export default function RoutineSavedPage() {
                   >
                     View Details
                   </Link>
+
                   <button
                     onClick={() => handleUnsave(routine._id)}
                     className="inline-flex items-center justify-center gap-2 rounded-xl border border-black/10 px-4 py-2 text-sm font-medium hover:bg-black/5"
@@ -179,6 +204,17 @@ export default function RoutineSavedPage() {
         )}
       </main>
 
+      <ErrorModal
+        isOpen={errorModal.isOpen}
+        title={errorModal.title}
+        message={errorModal.message}
+        onClose={() =>
+          setErrorModal((prev) => ({
+            ...prev,
+            isOpen: false,
+          }))
+        }
+      />
       <Footer />
     </div>
   );

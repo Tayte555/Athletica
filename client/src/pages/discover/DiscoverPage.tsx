@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Navbar from "../../components/UI/Navbar";
 import Footer from "../../components/UI/Footer";
+import ErrorModal from "../../components/UI/ErrorModal";
 import { Link } from "react-router-dom";
 import { apiGet } from "../../lib/routineApi";
 import type { Routine } from "../../types/routine";
@@ -43,7 +44,20 @@ export default function DiscoverPage() {
   });
 
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+
+  const [errorModal, setErrorModal] = useState({
+    isOpen: false,
+    title: "Something went wrong",
+    message: "",
+  });
+
+  const showError = (message: string, title = "Something went wrong") => {
+    setErrorModal({
+      isOpen: true,
+      title,
+      message,
+    });
+  };
 
   useEffect(() => {
     const timeout = setTimeout(() => {
@@ -57,7 +71,6 @@ export default function DiscoverPage() {
   useEffect(() => {
     const fetchRoutines = async () => {
       setLoading(true);
-      setError("");
 
       try {
         const params = new URLSearchParams({
@@ -94,8 +107,16 @@ export default function DiscoverPage() {
           },
         );
       } catch (err) {
-        console.error(err);
-        setError("Failed to load routines.");
+        showError(
+          err instanceof Error ? err.message : "Failed to load routines.",
+          "Discovery Error",
+        );
+        setRoutines([]);
+        setPagination({
+          page: 1,
+          totalPages: 1,
+          total: 0,
+        });
       } finally {
         setLoading(false);
       }
@@ -200,7 +221,6 @@ export default function DiscoverPage() {
       <Navbar />
 
       <main className="mx-auto w-full max-w-[1500px] px-6 pt-8 pb-16 md:px-10 lg:px-16">
-        {/* HERO */}
         <section className="relative mb-8 overflow-hidden rounded-[32px] border border-black/10">
           <div
             className="h-[280px] w-full bg-cover bg-center md:h-[340px]"
@@ -237,13 +257,13 @@ export default function DiscoverPage() {
           </div>
         </section>
 
-        {/* FILTERS */}
         <section className="mb-8 rounded-[28px] border border-black/10 bg-white p-6 shadow-sm">
           <div className="mb-6 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
             <div>
               <h2 className="text-3xl font-bold tracking-tight md:text-5xl">
                 Expand your search
               </h2>
+
               <p className="mt-2 text-sm text-gray-500 md:text-base">
                 Narrow down community plans using filters that match your goals
               </p>
@@ -262,6 +282,7 @@ export default function DiscoverPage() {
               <label className="mb-2 block text-sm text-gray-600">
                 Difficulty
               </label>
+
               <select
                 value={difficulty}
                 onChange={(e) => {
@@ -281,6 +302,7 @@ export default function DiscoverPage() {
               <label className="mb-2 block text-sm text-gray-600">
                 Recency
               </label>
+
               <select
                 value={recency}
                 onChange={(e) => {
@@ -300,6 +322,7 @@ export default function DiscoverPage() {
               <label className="mb-2 block text-sm text-gray-600">
                 Workout type
               </label>
+
               <select
                 value={workoutType}
                 onChange={(e) => {
@@ -322,6 +345,7 @@ export default function DiscoverPage() {
               <label className="mb-2 block text-sm text-gray-600">
                 Target muscle
               </label>
+
               <select
                 value={muscle}
                 onChange={(e) => {
@@ -346,6 +370,7 @@ export default function DiscoverPage() {
               <label className="mb-2 block text-sm text-gray-600">
                 Duration
               </label>
+
               <select
                 value={duration}
                 onChange={(e) => {
@@ -392,14 +417,13 @@ export default function DiscoverPage() {
           )}
         </section>
 
-        {/* RESULTS HEADER */}
         <div className="mb-6 grid grid-cols-3 items-end">
           <div></div>
 
           <div className="text-center">
             <h3 className="text-2xl font-bold md:text-4xl">Results</h3>
 
-            {!loading && !error && (
+            {!loading && (
               <p className="mt-2 text-sm text-gray-500">
                 {pagination.total} result
                 {pagination.total === 1 ? "" : "s"} found
@@ -423,10 +447,6 @@ export default function DiscoverPage() {
           </div>
         </div>
 
-        {error && (
-          <p className="mb-6 text-center text-sm text-red-600">{error}</p>
-        )}
-
         {loading ? (
           <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
             {[...Array(8)].map((_, index) => (
@@ -435,11 +455,13 @@ export default function DiscoverPage() {
                 className="overflow-hidden rounded-[28px] border border-black/10 bg-white shadow-sm animate-pulse"
               >
                 <div className="h-44 w-full bg-gray-200" />
+
                 <div className="p-5">
                   <div className="h-5 w-2/3 rounded bg-gray-200" />
                   <div className="mt-3 h-4 w-1/3 rounded bg-gray-200" />
                   <div className="mt-4 h-4 w-full rounded bg-gray-200" />
                   <div className="mt-2 h-4 w-4/5 rounded bg-gray-200" />
+
                   <div className="mt-4 flex gap-2">
                     <div className="h-7 w-20 rounded-full bg-gray-200" />
                     <div className="h-7 w-16 rounded-full bg-gray-200" />
@@ -451,11 +473,13 @@ export default function DiscoverPage() {
         ) : routines.length === 0 ? (
           <div className="rounded-[28px] border border-black/10 bg-white px-6 py-12 text-center shadow-sm">
             <h4 className="text-xl font-semibold">No routines found</h4>
+
             <p className="mt-2 text-sm text-gray-500">
               {debouncedSearch
                 ? `No results found for "${debouncedSearch}". Try changing your filters or search term.`
                 : "Try changing your filters to find more community workout plans."}
             </p>
+
             <button
               onClick={clearFilters}
               className="mt-5 rounded-xl bg-black px-4 py-2 text-sm font-medium text-white transition hover:opacity-90"
@@ -472,7 +496,6 @@ export default function DiscoverPage() {
                   to={`/routines/${routine._id}`}
                   className="group overflow-hidden rounded-[28px] border border-black/10 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
                 >
-                  {/* IMAGE */}
                   <div className="relative h-44 w-full overflow-hidden bg-gray-200">
                     {routine.image ? (
                       <img
@@ -493,7 +516,6 @@ export default function DiscoverPage() {
                     )}
                   </div>
 
-                  {/* CONTENT */}
                   <div className="p-5">
                     <div className="flex items-start justify-between gap-3">
                       <h4 className="line-clamp-2 text-xl font-semibold leading-tight">
@@ -555,7 +577,10 @@ export default function DiscoverPage() {
                         {routine.tags.slice(0, 3).map((tag: string) => (
                           <button
                             key={tag}
-                            onClick={() => {
+                            type="button"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
                               setSearch(tag);
                               setDebouncedSearch(tag);
                               setPage(1);
@@ -589,7 +614,6 @@ export default function DiscoverPage() {
               ))}
             </section>
 
-            {/* PAGINATION */}
             <div className="mt-10 flex items-center justify-center gap-3">
               <button
                 onClick={() => setPage((prev) => Math.max(prev - 1, 1))}
@@ -618,6 +642,18 @@ export default function DiscoverPage() {
       </main>
 
       <Footer />
+
+      <ErrorModal
+        isOpen={errorModal.isOpen}
+        title={errorModal.title}
+        message={errorModal.message}
+        onClose={() =>
+          setErrorModal((prev) => ({
+            ...prev,
+            isOpen: false,
+          }))
+        }
+      />
     </div>
   );
 }
