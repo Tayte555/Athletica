@@ -19,6 +19,8 @@ import RoutineDetails from "./pages/routines/RoutineDetailsPage";
 import SavedRoutines from "./pages/routines/lists/RoutineSavedPage";
 import AdminSettings from "./pages/settings/subpages/AdminSettings";
 import AboutPage from "./pages/about/AboutPage";
+import LegalPage from "./pages/legal/LegalPage";
+import TermsPage from "./pages/legal/TermsPage";
 
 export default function App() {
   return (
@@ -31,6 +33,8 @@ export default function App() {
       <Route path="/discover" element={<Discover />} />
       <Route path="/routines/:id" element={<RoutineDetails />} />
       <Route path="/about" element={<AboutPage />} />
+      <Route path="/terms" element={<TermsPage />} />
+      <Route path="/legal" element={<LegalPage />} />
 
       {/**PRIVATE General Routes */}
       <Route

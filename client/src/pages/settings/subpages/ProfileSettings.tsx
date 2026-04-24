@@ -1,5 +1,6 @@
 import { Edit2Icon } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
+import ErrorModal from "../../../components/UI/ErrorModal";
 
 export default function ProfileSettings() {
   const [form, setForm] = useState({
@@ -14,12 +15,34 @@ export default function ProfileSettings() {
     isPrivate: false,
   });
 
+  const [modal, setModal] = useState({
+    isOpen: false,
+    title: "",
+    message: "",
+  });
+
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const closeModal = () => {
+    setModal({
+      isOpen: false,
+      title: "",
+      message: "",
+    });
+  };
 
   useEffect(() => {
     const fetchProfile = async () => {
       const token = localStorage.getItem("token");
-      if (!token) return;
+
+      if (!token) {
+        setModal({
+          isOpen: true,
+          title: "Not logged in",
+          message: "You need to be logged in to view your profile settings.",
+        });
+        return;
+      }
 
       try {
         const res = await fetch("/api/user/me", {
@@ -27,6 +50,16 @@ export default function ProfileSettings() {
         });
 
         const data = await res.json();
+
+        if (!res.ok) {
+          setModal({
+            isOpen: true,
+            title: "Failed to load profile",
+            message:
+              data.message || "Your profile details could not be loaded.",
+          });
+          return;
+        }
 
         const savedPronouns = data.pronouns || "";
         const presetPronouns = [
@@ -55,6 +88,12 @@ export default function ProfileSettings() {
         });
       } catch (err) {
         console.error("Failed to fetch profile:", err);
+
+        setModal({
+          isOpen: true,
+          title: "Network error",
+          message: "Something went wrong while loading your profile settings.",
+        });
       }
     };
 
@@ -67,7 +106,15 @@ export default function ProfileSettings() {
 
   const handleSaveChanges = async () => {
     const token = localStorage.getItem("token");
-    if (!token) return;
+
+    if (!token) {
+      setModal({
+        isOpen: true,
+        title: "Not logged in",
+        message: "You need to be logged in to update your profile.",
+      });
+      return;
+    }
 
     const finalPronouns =
       form.pronouns === "Custom" ? form.customPronouns : form.pronouns;
@@ -96,25 +143,47 @@ export default function ProfileSettings() {
       const data = await res.json();
 
       if (!res.ok) {
-        alert(data.message || "Failed to update profile");
+        setModal({
+          isOpen: true,
+          title: "Profile update failed",
+          message: data.message || "Your profile could not be updated.",
+        });
         return;
       }
 
-      console.log("Profile updated:", data);
-      alert("Profile updated successfully");
+      setModal({
+        isOpen: true,
+        title: "Profile saved",
+        message: "Your profile details have been saved successfully.",
+      });
+
+      setForm((prev) => ({
+        ...prev,
+        avatar: null,
+        avatarUrl: data.avatar
+          ? `http://localhost:5555${data.avatar}`
+          : prev.avatarUrl,
+      }));
     } catch (err) {
       console.error("Error updating profile:", err);
+
+      setModal({
+        isOpen: true,
+        title: "Network error",
+        message:
+          "Something went wrong while saving your profile. Please try again.",
+      });
     }
   };
 
   return (
     <div>
-      <h1 className="border-b pb-2 border-black text-xl font-medium">
+      <h1 className="border-b border-black pb-2 text-xl font-medium">
         Public Profile
       </h1>
 
-      <div className="flex items-center space-x-4 mt-4">
-        <div className="relative w-36 h-36">
+      <div className="mt-4 flex items-center space-x-4">
+        <div className="relative h-36 w-36">
           <img
             src={
               form.avatar
@@ -123,14 +192,14 @@ export default function ProfileSettings() {
                   ? form.avatarUrl
                   : "/assets/default-avatar.jpg"
             }
-            className="w-36 h-36 rounded-full object-cover"
+            className="h-36 w-36 rounded-full object-cover"
             alt="Profile avatar"
           />
 
           <button
             type="button"
             onClick={openFilePicker}
-            className="absolute bottom-0 right-0 bg-white border rounded-md p-2 shadow hover:bg-gray-100"
+            className="absolute bottom-0 right-0 rounded-md border bg-white p-2 shadow hover:bg-gray-100"
           >
             <Edit2Icon size={16} />
           </button>
@@ -153,37 +222,37 @@ export default function ProfileSettings() {
       </div>
 
       <div className="mt-5">
-        <label className="text-sm font-bold mb-1 block">Name</label>
+        <label className="mb-1 block text-sm font-bold">Name</label>
         <input
           type="text"
           value={form.name}
           onChange={(e) => setForm({ ...form, name: e.target.value })}
-          className="w-full py-1 border-b border-gray-300 focus:outline-none bg-transparent"
+          className="w-full border-b border-gray-300 bg-transparent py-1 focus:outline-none"
         />
       </div>
 
       <div className="mt-5">
-        <label className="text-sm font-bold mb-1 block">Bio</label>
+        <label className="mb-1 block text-sm font-bold">Bio</label>
         <textarea
           value={form.bio}
           onChange={(e) => setForm({ ...form, bio: e.target.value })}
           rows={4}
           maxLength={300}
           placeholder="Tell people about yourself..."
-          className="w-full py-1 border-b border-gray-300 focus:outline-none resize-none bg-transparent"
+          className="w-full resize-none border-b border-gray-300 bg-transparent py-1 focus:outline-none"
         />
         <p className="mt-1 text-xs text-gray-500">{form.bio.length}/300</p>
       </div>
 
       <div className="mt-5">
-        <label className="text-sm font-bold mb-1 block">Location</label>
+        <label className="mb-1 block text-sm font-bold">Location</label>
         <input
           type="text"
           value={form.location}
           list="location-options"
           placeholder="Start typing your city..."
           onChange={(e) => setForm({ ...form, location: e.target.value })}
-          className="w-full py-1 border-b border-gray-300 focus:outline-none bg-transparent"
+          className="w-full border-b border-gray-300 bg-transparent py-1 focus:outline-none"
         />
 
         <datalist id="location-options">
@@ -198,7 +267,7 @@ export default function ProfileSettings() {
       </div>
 
       <div className="mt-5">
-        <label className="text-sm font-bold mb-1 block">Pronouns</label>
+        <label className="mb-1 block text-sm font-bold">Pronouns</label>
         <select
           value={form.pronouns}
           onChange={(e) =>
@@ -209,7 +278,7 @@ export default function ProfileSettings() {
                 e.target.value === "Custom" ? form.customPronouns : "",
             })
           }
-          className="w-full py-1 border-b border-gray-300 focus:outline-none bg-transparent"
+          className="w-full border-b border-gray-300 bg-transparent py-1 focus:outline-none"
         >
           <option value="">Prefer not to say</option>
           <option value="He/Him">He/Him</option>
@@ -217,17 +286,35 @@ export default function ProfileSettings() {
           <option value="They/Them">They/Them</option>
           <option value="He/They">He/They</option>
           <option value="She/They">She/They</option>
+          <option value="Custom">Custom</option>
         </select>
       </div>
 
+      {form.pronouns === "Custom" && (
+        <div className="mt-5">
+          <label className="mb-1 block text-sm font-bold">
+            Custom pronouns
+          </label>
+          <input
+            type="text"
+            value={form.customPronouns}
+            placeholder="Enter your pronouns"
+            onChange={(e) =>
+              setForm({ ...form, customPronouns: e.target.value })
+            }
+            className="w-full border-b border-gray-300 bg-transparent py-1 focus:outline-none"
+          />
+        </div>
+      )}
+
       <div className="mt-5">
-        <label className="text-sm font-bold mb-1 block">Link</label>
+        <label className="mb-1 block text-sm font-bold">Link</label>
         <input
           type="text"
           value={form.link}
           placeholder="https://example.com"
           onChange={(e) => setForm({ ...form, link: e.target.value })}
-          className="w-full py-1 border-b border-gray-300 focus:outline-none bg-transparent"
+          className="w-full border-b border-gray-300 bg-transparent py-1 focus:outline-none"
         />
       </div>
 
@@ -249,7 +336,7 @@ export default function ProfileSettings() {
           }`}
         >
           <span
-            className={`absolute bg-white top-1 h-5 w-5 rounded-full  transition ${
+            className={`absolute top-1 h-5 w-5 rounded-full bg-white transition ${
               form.isPrivate ? "left-8" : "left-1"
             }`}
           />
@@ -257,11 +344,18 @@ export default function ProfileSettings() {
       </div>
 
       <button
-        className="mt-4 bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600 transition"
+        className="mt-4 rounded-md bg-green-500 px-4 py-2 text-white transition hover:bg-green-600"
         onClick={handleSaveChanges}
       >
         Save Changes
       </button>
+
+      <ErrorModal
+        isOpen={modal.isOpen}
+        title={modal.title}
+        message={modal.message}
+        onClose={closeModal}
+      />
     </div>
   );
 }

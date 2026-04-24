@@ -76,7 +76,9 @@ export default function Settings() {
               Profile
             </NavLink>
 
-            <NavLink
+            {/** Too be added in future versions - out of scope for now */}
+
+            {/* <NavLink
               to="account"
               className={({ isActive }) =>
                 `rounded-md px-3 py-2 transition ${
@@ -96,7 +98,7 @@ export default function Settings() {
               }
             >
               Security
-            </NavLink>
+            </NavLink> */}
 
             <NavLink
               to="notifications"

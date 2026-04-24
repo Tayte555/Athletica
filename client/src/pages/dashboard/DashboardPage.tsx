@@ -5,7 +5,36 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { apiDelete, apiGet, apiPost } from "../../lib/routineApi";
 import type { Routine } from "../../types/routine";
-import { Star, TrendingUp } from "lucide-react";
+import {
+  Bookmark,
+  Dumbbell,
+  FolderOpen,
+  Plus,
+  Sparkles,
+  Star,
+  TrendingUp,
+} from "lucide-react";
+
+const quickActions = [
+  {
+    title: "Create Routine",
+    description: "Build a new workout routine from scratch.",
+    to: "/routines/create",
+    icon: Plus,
+  },
+  {
+    title: "My Routines",
+    description: "Manage the routines you have created.",
+    to: "/routines/my-routines",
+    icon: FolderOpen,
+  },
+  {
+    title: "Saved Routines",
+    description: "Return to routines you have saved.",
+    to: "/routines/saved",
+    icon: Bookmark,
+  },
+];
 
 export default function DashboardPage() {
   const [username, setUsername] = useState("");
@@ -19,11 +48,7 @@ export default function DashboardPage() {
   });
 
   const showError = (message: string, title = "Something went wrong") => {
-    setErrorModal({
-      isOpen: true,
-      title,
-      message,
-    });
+    setErrorModal({ isOpen: true, title, message });
   };
 
   useEffect(() => {
@@ -58,11 +83,9 @@ export default function DashboardPage() {
     const fetchRecommendedRoutines = async () => {
       try {
         setLoading(true);
-
         const data = await apiGet<Routine[]>(
           "/api/routines/recommended?context=dashboard&limit=4",
         );
-
         setRecommendedRoutines(data);
       } catch (err) {
         showError(
@@ -96,29 +119,50 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="bg-gray-50">
+    <div className="flex min-h-screen flex-col bg-gray-50">
       <Navbar />
 
-      <main className="mx-auto max-w-7xl px-6 py-10 min-h-screen">
-        <section className="mb-10">
-          <h1 className="text-5xl font-bold md:text-6xl">
-            Hi {username || "Athlete"}!
-          </h1>
-          <p className="mt-2 text-lg text-gray-600">
-            Welcome back to Athletica.
-          </p>
+      <main className="mx-auto w-full max-w-7xl flex-1 px-6 py-10">
+        <section className="mb-10 overflow-hidden rounded-3xl bg-gray-800 p-8 text-white shadow-sm md:p-10">
+          <div className="flex flex-col gap-8 md:flex-row md:items-end md:justify-between">
+            <div>
+              <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-sm font-medium">
+                <Sparkles size={16} />
+                Your training hub
+              </div>
+
+              <h1 className="text-4xl font-bold tracking-tight md:text-6xl">
+                Hi {username || "Athlete"}!
+              </h1>
+
+              <p className="mt-3 max-w-2xl text-base leading-7 text-white/70 md:text-lg">
+                Create routines, discover new workouts and keep track of the
+                plans that help you progress.
+              </p>
+            </div>
+
+            <Link
+              to="/routines/create"
+              className="inline-flex items-center justify-center gap-2 rounded-2xl bg-white px-5 py-3 text-sm font-semibold text-black transition hover:bg-gray-200"
+            >
+              <Plus size={18} />
+              Create routine
+            </Link>
+          </div>
         </section>
 
-        <section className="mb-12 rounded-3xl bg-white p-6 shadow-sm">
+        <section className="mb-12 rounded-3xl border border-black/5 bg-white p-6 shadow-sm">
           <div className="mb-6 flex items-start justify-between gap-4">
             <div>
               <div className="mb-2 flex items-center gap-2 text-sm font-medium text-gray-500">
                 <TrendingUp size={16} />
                 <span>Recommended routines</span>
               </div>
+
               <h2 className="text-2xl font-bold md:text-3xl">
                 Popular right now
               </h2>
+
               <p className="mt-2 text-sm text-gray-600">
                 A few public routines that are currently performing well.
               </p>
@@ -126,9 +170,9 @@ export default function DashboardPage() {
 
             <Link
               to="/routines"
-              className="text-sm font-medium text-black underline-offset-4 hover:underline"
+              className="rounded-xl border border-black/10 px-4 py-2 text-sm font-medium transition hover:bg-gray-50"
             >
-              View routines
+              View all
             </Link>
           </div>
 
@@ -141,9 +185,9 @@ export default function DashboardPage() {
           ) : (
             <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
               {recommendedRoutines.map((routine) => (
-                <div
+                <article
                   key={routine._id}
-                  className="overflow-hidden rounded-2xl border border-black/10 bg-white shadow-sm"
+                  className="overflow-hidden rounded-2xl border border-black/10 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-md"
                 >
                   <div className="h-44 w-full overflow-hidden bg-gray-100">
                     {routine.image ? (
@@ -153,24 +197,27 @@ export default function DashboardPage() {
                         className="h-full w-full object-cover"
                       />
                     ) : (
-                      <div className="flex h-full items-center justify-center text-sm text-gray-500">
-                        No cover image
+                      <div className="flex h-full items-center justify-center">
+                        <Dumbbell className="text-gray-300" size={42} />
                       </div>
                     )}
                   </div>
 
                   <div className="space-y-4 p-5">
                     <div>
-                      <h3 className="text-xl font-semibold leading-tight">
+                      <h3 className="line-clamp-1 text-xl font-semibold">
                         {routine.title}
                       </h3>
+
                       <p className="mt-1 text-sm text-gray-500">
                         by{" "}
-                        {routine.createdBy?.name || routine.createdBy?.username}
+                        {routine.createdBy?.name ||
+                          routine.createdBy?.username ||
+                          "Unknown user"}
                       </p>
                     </div>
 
-                    <p className="line-clamp-2 text-sm text-gray-600">
+                    <p className="line-clamp-2 text-sm leading-6 text-gray-600">
                       {routine.description}
                     </p>
 
@@ -183,10 +230,10 @@ export default function DashboardPage() {
                       </span>
                     </div>
 
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center justify-between gap-3 pt-2">
                       <Link
                         to={`/routines/${routine._id}`}
-                        className="rounded-xl bg-black px-4 py-2 text-sm font-medium text-white transition hover:opacity-90"
+                        className="rounded-xl bg-black px-4 py-2 text-sm font-medium text-white transition hover:bg-gray-800"
                       >
                         View
                       </Link>
@@ -199,50 +246,47 @@ export default function DashboardPage() {
                       </button>
                     </div>
 
-                    <div className="flex items-center gap-2 text-sm text-gray-500">
+                    <div className="flex items-center gap-2 border-t border-black/5 pt-3 text-sm text-gray-500">
                       <Star size={15} fill="currentColor" />
                       <span>{routine.savedByCount || 0} saves</span>
                     </div>
                   </div>
-                </div>
+                </article>
               ))}
             </div>
           )}
         </section>
 
         <section>
-          <h2 className="mb-6 text-2xl font-bold">Quick Actions</h2>
+          <div className="mb-6 flex items-end justify-between gap-4">
+            <div>
+              <h2 className="text-2xl font-bold">Quick Actions</h2>
+              <p className="mt-1 text-sm text-gray-500">
+                Jump straight into the most useful parts of Athletica.
+              </p>
+            </div>
+          </div>
 
           <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-            <Link to="/routines/create">
-              <div className="rounded-2xl bg-white p-6 shadow-sm transition hover:shadow-md">
-                <div className="mb-4 h-24 rounded-xl bg-gray-100"></div>
-                <h3 className="font-semibold">Create Routine</h3>
-                <p className="mt-1 text-sm text-gray-500">
-                  Build a new workout routine.
-                </p>
-              </div>
-            </Link>
+            {quickActions.map((action) => {
+              const Icon = action.icon;
 
-            <Link to="/routines/my-routines">
-              <div className="rounded-2xl bg-white p-6 shadow-sm transition hover:shadow-md">
-                <div className="mb-4 h-24 rounded-xl bg-gray-100"></div>
-                <h3 className="font-semibold">My Routines</h3>
-                <p className="mt-1 text-sm text-gray-500">
-                  Manage the routines you have created.
-                </p>
-              </div>
-            </Link>
+              return (
+                <Link key={action.title} to={action.to}>
+                  <div className="group rounded-3xl border border-black/5 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-md">
+                    <div className="mb-6 flex h-14 w-14 items-center justify-center rounded-2xl bg-black text-white transition group-hover:scale-105">
+                      <Icon size={26} />
+                    </div>
 
-            <Link to="/routines/saved">
-              <div className="rounded-2xl bg-white p-6 shadow-sm transition hover:shadow-md">
-                <div className="mb-4 h-24 rounded-xl bg-gray-100"></div>
-                <h3 className="font-semibold">Saved Routines</h3>
-                <p className="mt-1 text-sm text-gray-500">
-                  Go back to routines you have saved.
-                </p>
-              </div>
-            </Link>
+                    <h3 className="text-lg font-bold">{action.title}</h3>
+
+                    <p className="mt-2 text-sm leading-6 text-gray-500">
+                      {action.description}
+                    </p>
+                  </div>
+                </Link>
+              );
+            })}
           </div>
         </section>
       </main>
