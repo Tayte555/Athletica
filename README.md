@@ -42,7 +42,7 @@ Athletica is a social fitness web application designed to help users create, man
 ## 📥 1. Clone the Repository
 
 ```bash
-git clone <your-repository-url>
+git clone https://github.com/Tayte555/Athletica.git
 cd athletica
 ```
 
@@ -166,3 +166,6 @@ If you experience setup issues, please contact me directly.
 Developed by Tayte Keates
 
 For setup support, environment variables, or project questions, please get in touch.
+
+Instagram: @taytekeates
+LinkedIn: /in/taytekeates
