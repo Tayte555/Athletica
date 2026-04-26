@@ -271,7 +271,18 @@ export default function RoutinePage() {
 
                       <p className="mt-1 text-sm text-[#666]">
                         by{" "}
-                        {routine.createdBy?.name || routine.createdBy?.username}
+                        <Link
+                          to={
+                            routine.createdBy?.username
+                              ? `/${routine.createdBy.username}`
+                              : "#"
+                          }
+                          className="inline-block text-sm text-gray-500 transition hover:text-black"
+                        >
+                          {routine.createdBy?.name ||
+                            routine.createdBy?.username ||
+                            "Athletica user"}
+                        </Link>
                       </p>
                     </div>
 
@@ -363,7 +374,18 @@ export default function RoutinePage() {
 
                     <p className="mt-1 text-sm text-[#666]">
                       by{" "}
-                      {routine.createdBy?.name || routine.createdBy?.username}
+                      <Link
+                        to={
+                          routine.createdBy?.username
+                            ? `/${routine.createdBy.username}`
+                            : "#"
+                        }
+                        className="inline-block text-sm text-gray-500 transition hover:text-black"
+                      >
+                        {routine.createdBy?.name ||
+                          routine.createdBy?.username ||
+                          "Athletica user"}
+                      </Link>
                     </p>
                   </div>
 

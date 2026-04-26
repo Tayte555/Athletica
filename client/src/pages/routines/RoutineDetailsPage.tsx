@@ -284,11 +284,18 @@ export default function RoutineDetailsPage() {
 
             <div className="rounded-[28px] border border-black/10 bg-white p-6">
               <p className="text-sm text-[#666]">Created by</p>
-              <p className="mt-1 text-lg font-semibold">
+              <Link
+                to={
+                  routine.createdBy?.username
+                    ? `/${routine.createdBy.username}`
+                    : "#"
+                }
+                className="mt-1 text-lg font-semibold "
+              >
                 {routine.createdBy?.name ||
                   routine.createdBy?.username ||
                   "User"}
-              </p>
+              </Link>
 
               <div className="mt-4 grid grid-cols-2 gap-3">
                 <div className="rounded-2xl border border-black/10 p-4">

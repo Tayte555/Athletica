@@ -209,11 +209,20 @@ export default function DashboardPage() {
                         {routine.title}
                       </h3>
 
-                      <p className="mt-1 text-sm text-gray-500">
+                      <p className="mt-1 text-sm text-[#666]">
                         by{" "}
-                        {routine.createdBy?.name ||
-                          routine.createdBy?.username ||
-                          "Unknown user"}
+                        <Link
+                          to={
+                            routine.createdBy?.username
+                              ? `/${routine.createdBy.username}`
+                              : "#"
+                          }
+                          className="inline-block text-sm text-gray-500 transition hover:text-black"
+                        >
+                          {routine.createdBy?.name ||
+                            routine.createdBy?.username ||
+                            "Athletica user"}
+                        </Link>
                       </p>
                     </div>
 
