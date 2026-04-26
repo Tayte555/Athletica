@@ -510,7 +510,6 @@ router.get("/recommended", protect, async (req, res) => {
       return res.json(withCounts);
     }
 
-    // Dashboard recommendations:
     routines = await Routine.find({
       isPublic: true,
       createdBy: { $ne: req.userId },

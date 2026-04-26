@@ -163,9 +163,7 @@ router.put("/me", protect, upload.single("avatar"), async (req, res) => {
           ...user.notificationPreferences?.toObject?.(),
           ...parsed,
         };
-      } catch {
-        // ignore malformed preferences payload
-      }
+      } catch {}
     }
 
     if (req.file) {
@@ -264,7 +262,6 @@ router.post(
 
         await requestingUser.save();
 
-        // Delete the original follow request notification
         await Notification.deleteMany({
           recipient: currentUser._id,
           actor: requestingUser._id,
@@ -272,7 +269,6 @@ router.post(
           entityType: "profile",
         });
 
-        // Create the new follower notification for the user who accepted
         await createNotification({
           recipient: currentUser._id,
           actor: requestingUser._id,
@@ -283,7 +279,6 @@ router.post(
           entityId: currentUser._id,
         });
 
-        // Notify the requester that they were accepted
         await createNotification({
           recipient: requestingUser._id,
           actor: currentUser._id,

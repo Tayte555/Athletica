@@ -14,7 +14,6 @@ export default function AuthLayout({
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-100 via-white to-blue-100 px-4 py-4">
       <div className="mx-auto grid min-h-[92vh] max-w-6xl overflow-hidden rounded-3xl bg-white shadow-2xl lg:grid-cols-2">
-        {/* Left Side */}
         <div className="hidden lg:flex flex-col justify-between bg-gradient-to-br from-slate-900 via-slate-800 to-blue-900 p-8 text-white">
           <div>
             <div className="mb-4 text-sm font-semibold uppercase tracking-[0.3em] text-blue-200">
@@ -38,7 +37,6 @@ export default function AuthLayout({
           </div>
         </div>
 
-        {/* Right Side */}
         <div className="flex items-center justify-center p-6 sm:p-8">
           <div className="w-full max-w-xl">
             <h2 className="text-3xl font-bold text-gray-900">{title}</h2>

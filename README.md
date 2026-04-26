@@ -60,7 +60,7 @@ npm run client:i
 
 This project requires environment variables to run correctly for development.
 
-Please contact me directly to receive the required `.env` files and setup instructions.
+Please create a `.env` file in the server root using the `.env.example` template.
 
 These include values such as:
 

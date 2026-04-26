@@ -141,7 +141,6 @@ export default function OptimiseRoutineModal({
 
               {result.couldOptimise && (
                 <div className="grid gap-6 lg:grid-cols-2">
-                  {/* ADDITIONS */}
                   <div className="rounded-2xl border p-5">
                     <h3 className="text-lg font-bold">Suggested additions</h3>
                     <p className="mt-1 text-sm text-gray-500">
@@ -169,7 +168,6 @@ export default function OptimiseRoutineModal({
                     </div>
                   </div>
 
-                  {/* REMOVALS */}
                   <div className="rounded-2xl border p-5">
                     <h3 className="text-lg font-bold">Suggested removals</h3>
                     <p className="mt-1 text-sm text-gray-500">
